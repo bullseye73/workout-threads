@@ -150,18 +150,27 @@ async fn refine_post(
 }
 
 #[tauri::command]
-async fn set_claude_key(lib: State<'_, Shared>, key: Option<String>) -> Res<()> {
-    run(lib, move |l| l.set_claude_key(key)).await
+async fn refine_status(lib: State<'_, Shared>) -> Res<RefineStatusDto> {
+    run(lib, |l| l.refine_status()).await
 }
 
 #[tauri::command]
-async fn claude_status(lib: State<'_, Shared>) -> Res<ClaudeStatusDto> {
-    run(lib, |l| l.claude_status()).await
+async fn set_refine_provider(lib: State<'_, Shared>, provider: String) -> Res<()> {
+    run(lib, move |l| l.set_refine_provider(&provider)).await
 }
 
 #[tauri::command]
-async fn set_claude_model(lib: State<'_, Shared>, model: Option<String>) -> Res<()> {
-    run(lib, move |l| l.set_claude_model(model)).await
+async fn set_refine_key(lib: State<'_, Shared>, provider: String, key: Option<String>) -> Res<()> {
+    run(lib, move |l| l.set_refine_key(&provider, key)).await
+}
+
+#[tauri::command]
+async fn set_refine_model(
+    lib: State<'_, Shared>,
+    provider: String,
+    model: Option<String>,
+) -> Res<()> {
+    run(lib, move |l| l.set_refine_model(&provider, model)).await
 }
 
 #[tauri::command]
@@ -313,9 +322,10 @@ fn main() {
             set_route_points,
             set_weather,
             refine_post,
-            set_claude_key,
-            claude_status,
-            set_claude_model,
+            refine_status,
+            set_refine_provider,
+            set_refine_key,
+            set_refine_model,
             set_card_route_trim,
             settings,
             regenerate_cards,

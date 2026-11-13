@@ -8,6 +8,7 @@ use crate::{Result, ServiceError};
 const SERVICE: &str = "dev.sns-create.workout";
 /// Claude API 키 (3단계부터 같은 이름이라 기존 키가 그대로 유지된다).
 pub const CLAUDE_KEY: &str = "anthropic_api_key";
+pub const GEMINI_KEY: &str = "gemini_api_key";
 pub const GOOGLE_REFRESH: &str = "google_refresh_token";
 /// "토큰|만료 unix초" 형식.
 pub const GOOGLE_ACCESS: &str = "google_access_token";

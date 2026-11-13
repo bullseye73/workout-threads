@@ -17,8 +17,9 @@ fn named_secrets_are_separate() {
 #[test]
 fn claude_key_does_not_touch_google_tokens() {
     let (_t, mut lib, _h) = temp_library_with_mock();
-    lib.set_claude_key(Some("k".into())).unwrap();
-    assert!(lib.claude_status().unwrap().has_key);
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", Some("k".into())).unwrap();
+    assert!(lib.refine_status().unwrap().has_key);
     assert!(lib.secrets_for_tests().get(GOOGLE_REFRESH).is_none());
     assert_eq!(
         lib.secrets_for_tests().get(CLAUDE_KEY).as_deref(),

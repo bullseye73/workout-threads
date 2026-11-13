@@ -94,6 +94,10 @@ pub fn temp_library_with_mock() -> (tempfile::TempDir, Library, Arc<MockHttp>) {
             "api.anthropic.com",
             vec![ok(enrich_fixture("claude_ok.json"))],
         ),
+        (
+            "generativelanguage.googleapis.com",
+            vec![ok(enrich_fixture("gemini_ok.json"))],
+        ),
     ]));
     let t = tempfile::tempdir().unwrap();
     let mut lib = Library::open_with(

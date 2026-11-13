@@ -10,12 +10,12 @@ use workout_card::photo_for_upload;
 use workout_core::chrono::{Duration as ChronoDuration, Local, NaiveDateTime};
 use workout_core::model::LatLon;
 use workout_core::privacy::{MAX_PLACE_POINTS, TRIM_M, privacy_points, weather_point};
-use workout_enrich::claude::{DEFAULT_MODEL, RefineInput, refine};
 use workout_enrich::geocode::{
     PlaceSummary, RateLimiter, parse_reverse, reverse_url, summarize_places,
 };
+use workout_enrich::refine::{Provider, RefineInput, refine_with};
 use workout_enrich::weather::{parse_weather, weather_url};
-use workout_enrich::{EnrichError, Http, USER_AGENT, check_status};
+use workout_enrich::{Http, USER_AGENT, check_status};
 use workout_post::{PlaceText, PostContext, PostText, WeatherText};
 use workout_store::PostRow;
 
@@ -23,7 +23,7 @@ use crate::*;
 
 /// Nominatim 이용 정책: 초당 1건.
 pub(crate) const NOMINATIM_INTERVAL: Duration = Duration::from_secs(1);
-const MODEL_KEY: &str = "claude_model";
+const PROVIDER_KEY: &str = "refine_provider";
 const CARD_TRIM_KEY: &str = "card_route_trim";
 /// Claude로 보내는 사진 수와 크기.
 const MAX_UPLOAD_PHOTOS: usize = 4;
@@ -111,8 +111,9 @@ impl EnrichJob {
     }
 }
 
-/// 잠금 없이 실행하는 Claude 다듬기 작업.
+/// 잠금 없이 실행하는 AI 다듬기 작업.
 pub struct RefineJob {
+    provider: Provider,
     http: Arc<dyn Http>,
     key: String,
     model: String,
@@ -127,8 +128,14 @@ impl RefineJob {
             .iter()
             .filter_map(|p| photo_for_upload(p, UPLOAD_SIDE).ok())
             .collect();
-        let text = refine(self.http.as_ref(), &self.key, &self.model, &self.input)
-            .map_err(|e| ServiceError::Failed(e.to_string()))?;
+        let text = refine_with(
+            self.provider,
+            self.http.as_ref(),
+            &self.key,
+            &self.model,
+            &self.input,
+        )
+        .map_err(|e| ServiceError::Failed(e.to_string()))?;
         Ok(RefineDto {
             full_text: text.full_text(),
             body: text.body,
@@ -288,10 +295,13 @@ impl Library {
         hashtags: &[String],
         include_photos: bool,
     ) -> Result<RefineJob> {
-        let key = self
-            .secrets
-            .get(secrets::CLAUDE_KEY)
-            .ok_or_else(|| ServiceError::Failed(EnrichError::NoKey.to_string()))?;
+        let provider = self.refine_provider()?;
+        let key = self.secrets.get(provider.key_name()).ok_or_else(|| {
+            ServiceError::Failed(format!(
+                "설정에서 {} API 키를 넣어 주세요",
+                provider.label()
+            ))
+        })?;
         let row = self
             .store
             .activity(id)?
@@ -322,9 +332,10 @@ impl Library {
             photos_jpeg: vec![],
         };
         Ok(RefineJob {
+            provider,
             http: self.http.clone(),
             key,
-            model: self.claude_model()?,
+            model: self.refine_model(provider)?,
             input,
             photo_paths,
         })
@@ -337,31 +348,74 @@ impl Library {
             .run()
     }
 
-    pub fn set_claude_key(&mut self, key: Option<String>) -> Result<()> {
-        let key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty());
-        self.secrets.set(secrets::CLAUDE_KEY, key.as_deref())
+    fn provider_arg(id: &str) -> Result<Provider> {
+        Provider::parse(id).ok_or_else(|| ServiceError::Failed(format!("알 수 없는 AI: {id}")))
     }
 
-    pub fn set_claude_model(&mut self, model: Option<String>) -> Result<()> {
-        let model = model
-            .map(|m| m.trim().to_string())
-            .filter(|m| !m.is_empty());
-        self.store.set_setting(MODEL_KEY, model.as_deref())?;
+    fn refine_provider(&self) -> Result<Provider> {
+        Ok(self
+            .store
+            .setting(PROVIDER_KEY)?
+            .and_then(|p| Provider::parse(&p))
+            .unwrap_or(Provider::Gemini))
+    }
+
+    fn refine_model(&self, p: Provider) -> Result<String> {
+        Ok(self
+            .store
+            .setting(p.model_setting())?
+            .unwrap_or_else(|| p.default_model().to_string()))
+    }
+
+    /// 글 다듬기에 쓸 AI를 고른다 ("gemini" | "claude").
+    pub fn set_refine_provider(&mut self, provider: &str) -> Result<()> {
+        let p = Self::provider_arg(provider)?;
+        self.store.set_setting(PROVIDER_KEY, Some(p.id()))?;
         Ok(())
     }
 
-    fn claude_model(&self) -> Result<String> {
-        Ok(self
-            .store
-            .setting(MODEL_KEY)?
-            .unwrap_or_else(|| DEFAULT_MODEL.to_string()))
+    /// 그 AI의 API 키를 키 보관함에 저장한다 (None이면 지움).
+    pub fn set_refine_key(&mut self, provider: &str, key: Option<String>) -> Result<()> {
+        let p = Self::provider_arg(provider)?;
+        let key = key.map(|k| k.trim().to_string()).filter(|k| !k.is_empty());
+        self.secrets.set(p.key_name(), key.as_deref())
     }
 
-    /// 키가 있는지만 알려 준다 (키 값은 절대 돌려주지 않음).
-    pub fn claude_status(&self) -> Result<ClaudeStatusDto> {
-        Ok(ClaudeStatusDto {
-            has_key: self.secrets.get(secrets::CLAUDE_KEY).is_some(),
-            model: self.claude_model()?,
+    pub fn set_refine_model(&mut self, provider: &str, model: Option<String>) -> Result<()> {
+        let p = Self::provider_arg(provider)?;
+        let model = model
+            .map(|m| m.trim().to_string())
+            .filter(|m| !m.is_empty());
+        self.store
+            .set_setting(p.model_setting(), model.as_deref())?;
+        Ok(())
+    }
+
+    /// 고른 AI와 각 AI의 키 유무·모델 (키 값은 절대 돌려주지 않음).
+    pub fn refine_status(&self) -> Result<RefineStatusDto> {
+        let current = self.refine_provider()?;
+        let mut providers = Vec::new();
+        for p in Provider::ALL {
+            providers.push(ProviderDto {
+                id: p.id().into(),
+                label: p.label().into(),
+                company: p.company().into(),
+                has_key: self.secrets.get(p.key_name()).is_some(),
+                model: self.refine_model(p)?,
+            });
+        }
+        let cur = providers
+            .iter()
+            .find(|d| d.id == current.id())
+            .cloned()
+            .expect("고른 AI");
+        Ok(RefineStatusDto {
+            provider: cur.id,
+            label: cur.label,
+            company: cur.company,
+            has_key: cur.has_key,
+            model: cur.model,
+            providers,
         })
     }
 

@@ -241,9 +241,27 @@ pub struct RefineDto {
 #[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct ClaudeStatusDto {
+pub struct ProviderDto {
+    /// "gemini" | "claude"
+    pub id: String,
+    pub label: String,
+    /// 사진을 받는 회사 (Google | Anthropic).
+    pub company: String,
     pub has_key: bool,
     pub model: String,
+}
+
+/// 글 다듬기 AI 상태: 고른 AI와 전체 목록.
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct RefineStatusDto {
+    pub provider: String,
+    pub label: String,
+    pub company: String,
+    pub has_key: bool,
+    pub model: String,
+    pub providers: Vec<ProviderDto>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]

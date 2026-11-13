@@ -184,7 +184,9 @@ fn refine_returns_preview_without_saving() {
     workout_testkit::require_samples!();
     let (_t, mut lib, http) = temp_library_with_mock();
     let id = import_1025(&mut lib);
-    lib.set_claude_key(Some("test-key".into())).unwrap();
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", Some("test-key".into()))
+        .unwrap();
     let before = lib.post_view(&id).unwrap().body;
     let r = lib.refine_post(&id, true).unwrap();
     assert!(r.body.starts_with("일요일 오후"));
@@ -201,23 +203,27 @@ fn model_setting_is_used() {
     workout_testkit::require_samples!();
     let (_t, mut lib, http) = temp_library_with_mock();
     let id = import_1025(&mut lib);
-    lib.set_claude_key(Some("k".into())).unwrap();
-    lib.set_claude_model(Some("claude-sonnet-5-5".into()))
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", Some("k".into())).unwrap();
+    lib.set_refine_model("claude", Some("claude-sonnet-5-5".into()))
         .unwrap();
     lib.refine_post(&id, false).unwrap();
     assert_eq!(http.last_body("anthropic")["model"], "claude-sonnet-5-5");
-    assert_eq!(lib.claude_status().unwrap().model, "claude-sonnet-5-5");
+    assert_eq!(lib.refine_status().unwrap().model, "claude-sonnet-5-5");
 }
 
 #[test]
 fn key_status_never_reveals_key() {
     let (_t, mut lib, _h) = temp_library_with_mock();
-    assert!(!lib.claude_status().unwrap().has_key);
-    lib.set_claude_key(Some("sk-secret".into())).unwrap();
-    let s = serde_json::to_string(&lib.claude_status().unwrap()).unwrap();
+    assert!(!lib.refine_status().unwrap().has_key);
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", Some("sk-secret".into()))
+        .unwrap();
+    let s = serde_json::to_string(&lib.refine_status().unwrap()).unwrap();
     assert!(s.contains("\"hasKey\":true") && !s.contains("sk-secret"));
-    lib.set_claude_key(None).unwrap();
-    assert!(!lib.claude_status().unwrap().has_key);
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", None).unwrap();
+    assert!(!lib.refine_status().unwrap().has_key);
 }
 
 #[test]
@@ -263,7 +269,8 @@ fn refine_uses_given_text() {
     workout_testkit::require_samples!();
     let (_t, mut lib, http) = temp_library_with_mock();
     let id = import_1025(&mut lib);
-    lib.set_claude_key(Some("k".into())).unwrap();
+    lib.set_refine_provider("claude").unwrap();
+    lib.set_refine_key("claude", Some("k".into())).unwrap();
     let job = lib
         .prepare_refine(&id, "내가 방금 고친 글", &["#직접".into()], false)
         .unwrap();
