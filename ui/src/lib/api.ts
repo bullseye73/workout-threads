@@ -4,7 +4,7 @@ import type { ImportReport } from './bindings/ImportReport'
 import type { MonthView } from './bindings/MonthView'
 import type { PhotoDto } from './bindings/PhotoDto'
 import type { PostView } from './bindings/PostView'
-import type { ClaudeStatusDto } from './bindings/ClaudeStatusDto'
+import type { RefineStatusDto } from './bindings/RefineStatusDto'
 import type { RefineDto } from './bindings/RefineDto'
 import type { SettingsDto } from './bindings/SettingsDto'
 import type { WeatherDto } from './bindings/WeatherDto'
@@ -28,9 +28,11 @@ export interface Api {
   setWeather(id: string, weather: WeatherDto | null): Promise<PostView>
   /** 화면에 있는 글(저장 전 수정 포함)을 다듬는다. 저장하지 않는다. */
   refinePost(id: string, body: string, hashtags: string[], includePhotos: boolean): Promise<RefineDto>
-  setClaudeKey(key: string | null): Promise<void>
-  claudeStatus(): Promise<ClaudeStatusDto>
-  setClaudeModel(model: string | null): Promise<void>
+  /** 글 다듬기 AI 상태 (키 값은 돌려주지 않음). */
+  refineStatus(): Promise<RefineStatusDto>
+  setRefineProvider(provider: string): Promise<void>
+  setRefineKey(provider: string, key: string | null): Promise<void>
+  setRefineModel(provider: string, model: string | null): Promise<void>
   setCardRouteTrim(on: boolean): Promise<void>
   settings(): Promise<SettingsDto>
   regenerateCards(id: string): Promise<number>
@@ -76,9 +78,10 @@ export const tauriApi: Api = {
   setRoutePoints: (activityId, points) => invoke('set_route_points', { activityId, points }),
   setWeather: (activityId, weather) => invoke('set_weather', { activityId, weather }),
   refinePost: (activityId, body, hashtags, includePhotos) => invoke('refine_post', { activityId, body, hashtags, includePhotos }),
-  setClaudeKey: key => invoke('set_claude_key', { key }),
-  claudeStatus: () => invoke('claude_status'),
-  setClaudeModel: model => invoke('set_claude_model', { model }),
+  refineStatus: () => invoke('refine_status'),
+  setRefineProvider: provider => invoke('set_refine_provider', { provider }),
+  setRefineKey: (provider, key) => invoke('set_refine_key', { provider, key }),
+  setRefineModel: (provider, model) => invoke('set_refine_model', { provider, model }),
   setCardRouteTrim: on => invoke('set_card_route_trim', { on }),
   settings: () => invoke('settings'),
   regenerateCards: activityId => invoke('regenerate_cards', { activityId }),
@@ -115,7 +118,18 @@ const mockBackup: { client: GoogleClientDto | null; status: BackupStatusDto } = 
   client: null,
   status: { configured: false, signedIn: false, lastSuccess: null, lastError: null, pending: 3, canRestore: false },
 }
-const mockClaude = { hasKey: false, model: 'claude-opus-5-5' }
+const mockRefine = {
+  provider: 'gemini',
+  providers: [
+    { id: 'gemini', label: 'Gemini', company: 'Google', hasKey: false, model: 'gemini-3.8-flash' },
+    { id: 'claude', label: 'Claude', company: 'Anthropic', hasKey: false, model: 'claude-opus-5-5' },
+  ],
+}
+function mockRefineStatus(): RefineStatusDto {
+  const cur = mockRefine.providers.find(p => p.id === mockRefine.provider)!
+  return { provider: cur.id, label: cur.label, company: cur.company, hasKey: cur.hasKey, model: cur.model,
+    providers: mockRefine.providers.map(p => ({ ...p })) }
+}
 const mockSettings = { cardRouteTrim: false }
 
 const delay = <T>(v: T) => new Promise<T>(r => setTimeout(() => r(v), 50))
@@ -157,9 +171,14 @@ export const mockApi: Api = {
     const tags = [...hashtags, '#가짜공원']
     return delay({ body, hashtags: tags, fullText: `${body}\n\n${tags.join(' ')}` })
   },
-  setClaudeKey: async key => { mockClaude.hasKey = !!key; await delay(undefined) },
-  claudeStatus: async () => delay({ ...mockClaude }),
-  setClaudeModel: async model => { mockClaude.model = model ?? 'claude-opus-5-5'; await delay(undefined) },
+  refineStatus: async () => delay(mockRefineStatus()),
+  setRefineProvider: async p => { mockRefine.provider = p; await delay(undefined) },
+  setRefineKey: async (p, key) => { mockRefine.providers.find(x => x.id === p)!.hasKey = !!key; await delay(undefined) },
+  setRefineModel: async (p, model) => {
+    const x = mockRefine.providers.find(y => y.id === p)!
+    x.model = model ?? (p === 'gemini' ? 'gemini-3.8-flash' : 'claude-opus-5-5')
+    await delay(undefined)
+  },
   setCardRouteTrim: async on => { mockSettings.cardRouteTrim = on; await delay(undefined) },
   settings: async () => delay({ ...mockSettings }),
   regenerateCards: async () => delay(2),

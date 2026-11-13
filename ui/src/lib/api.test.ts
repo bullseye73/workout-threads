@@ -35,3 +35,17 @@ describe('mockApi backup', () => {
     expect(s.lastSuccess).not.toBeNull()
   })
 })
+
+describe('mockApi refine provider', () => {
+  it('defaults to Gemini and switches to Claude', async () => {
+    let s = await mockApi.refineStatus()
+    expect(s.provider).toBe('gemini')
+    expect(s.company).toBe('Google')
+    await mockApi.setRefineKey('claude', 'k')
+    await mockApi.setRefineProvider('claude')
+    s = await mockApi.refineStatus()
+    expect(s.provider).toBe('claude')
+    expect(s.hasKey).toBe(true)
+    expect(s.providers.find(p => p.id === 'gemini')?.hasKey).toBe(false)
+  })
+})

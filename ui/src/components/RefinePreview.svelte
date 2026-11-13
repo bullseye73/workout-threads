@@ -1,14 +1,14 @@
 <script lang="ts">
-  // Claude가 다듬은 글을 지금 글과 나란히 보여 주고, 적용할지 고르게 한다.
+  // AI가 다듬은 글을 지금 글과 나란히 보여 주고, 적용할지 고르게 한다.
   import type { RefineDto } from '../lib/bindings/RefineDto'
-  let { current, refined, onApply, onCancel }: {
-    current: string; refined: RefineDto; onApply: () => void; onCancel: () => void
+  let { current, refined, label = 'AI', onApply, onCancel }: {
+    current: string; refined: RefineDto; label?: string; onApply: () => void; onCancel: () => void
   } = $props()
 </script>
 
 <div class="backdrop" role="presentation" onclick={onCancel}></div>
 <div class="panel" role="dialog" aria-modal="true" aria-labelledby="refine-title">
-  <h2 id="refine-title">Claude가 다듬은 글</h2>
+  <h2 id="refine-title">{label}가 다듬은 글</h2>
   <div class="cols">
     <section><h3>지금 글</h3><pre>{current}</pre></section>
     <section class="new"><h3>다듬은 글</h3><pre>{refined.fullText}</pre></section>

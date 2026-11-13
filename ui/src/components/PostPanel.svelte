@@ -3,6 +3,7 @@
   import { api } from '../lib/api'
   import type { PostView } from '../lib/bindings/PostView'
   import type { RefineDto } from '../lib/bindings/RefineDto'
+  import type { RefineStatusDto } from '../lib/bindings/RefineStatusDto'
   import { mergeEditor, parseRoutePoints, parseWeather, routeText, weatherText } from '../lib/enrich'
   import { parseHashtags } from '../lib/format'
   import RefinePreview from './RefinePreview.svelte'
@@ -19,6 +20,8 @@
   let weatherInput = $state('')
   let includePhotos = $state(false)
   let refined = $state<RefineDto | null>(null)
+  let ai = $state<RefineStatusDto | null>(null)
+  $effect(() => { api.refineStatus().then(s => (ai = s)).catch(() => undefined) })
   let cacheBust = $state(0)
 
   const dirty = $derived(!!post && (body !== post.body || parseHashtags(tags).join(' ') !== post.hashtags.join(' ')))
@@ -120,14 +123,14 @@
         <button class="btn primary" onclick={copy} disabled={busy}>글 복사</button>
         <button class="btn" onclick={save} disabled={busy || !dirty}>저장</button>
         <button class="btn" onclick={regenerate} disabled={busy}>템플릿으로 다시 쓰기</button>
-        <button class="btn" onclick={refine} disabled={busy}>Claude로 다듬기</button>
+        <button class="btn" onclick={refine} disabled={busy} title={ai ? `${ai.label}로 다듬어요 (설정에서 바꿀 수 있어요)` : ''}>{ai?.label ?? 'AI'}로 다듬기</button>
         <label class="check"><input type="checkbox" bind:checked={includePhotos} /> 사진도 보내기</label>
         <span class="spacer"></span>
         <button class="btn done" onclick={publish} disabled={busy || post.status === 'published'}>
           {post.status === 'published' ? '게시함' : '게시 완료'}
         </button>
       </div>
-      {#if includePhotos}<p class="hint">사진은 위치 정보를 지운 작은 사본으로 Anthropic 서버에 보내져요.</p>{/if}
+      {#if includePhotos}<p class="hint">사진은 위치 정보를 지운 작은 사본으로 {ai?.company ?? 'AI'} 서버에 보내져요.</p>{/if}
       {#if busy}<p class="hint" role="status">처리 중…</p>{/if}
       {#if message}<p class="msg" role="status">{message}</p>{/if}
       {#if error}<p class="error" role="alert">{error}</p>{/if}
@@ -153,7 +156,7 @@
 {/if}
 
 {#if refined && post}
-  <RefinePreview current={fullText} {refined} onApply={applyRefined} onCancel={() => (refined = null)} />
+  <RefinePreview current={fullText} {refined} label={ai?.label ?? 'AI'} onApply={applyRefined} onCancel={() => (refined = null)} />
 {/if}
 
 <style>

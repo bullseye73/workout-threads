@@ -1,12 +1,14 @@
 <script lang="ts">
-  // 설정: Claude API 키(키 값은 다시 보여 주지 않음), 모델, 카드 경로선 가리기.
+  // 설정: 글 다듬기 AI(Gemini/Claude)와 키(키 값은 다시 보여 주지 않음)·모델, 카드 경로선, 드라이브 백업.
   import { api } from '../lib/api'
   import { backupStatusText } from '../lib/backup'
   import type { BackupStatusDto } from '../lib/bindings/BackupStatusDto'
+  import type { RefineStatusDto } from '../lib/bindings/RefineStatusDto'
   let { onClose }: { onClose: () => void } = $props()
-  let hasKey = $state(false)
+  let refine = $state<RefineStatusDto | null>(null)
   let model = $state('')
   let keyInput = $state('')
+  const KEY_HINT: Record<string, string> = { gemini: 'AIza…', claude: 'sk-ant-…' }
   let trim = $state(false)
   let message = $state('')
   let error = $state('')
@@ -17,7 +19,7 @@
   let working = $state('')
 
   $effect(() => {
-    api.claudeStatus().then(s => { hasKey = s.hasKey; model = s.model }).catch(e => (error = String(e)))
+    loadRefine()
     api.settings().then(s => (trim = s.cardRouteTrim)).catch(e => (error = String(e)))
     api.googleClient().then(c => { clientId = c?.clientId ?? ''; hasSecret = !!c?.hasSecret }).catch(() => undefined)
     api.backupStatus().then(s => (backup = s)).catch(() => undefined)
@@ -50,15 +52,23 @@
     }
   }
 
+  async function loadRefine() {
+    try { refine = await api.refineStatus(); model = refine.model; keyInput = '' } catch (e) { error = String(e) }
+  }
+  async function chooseProvider(p: string) {
+    try { await api.setRefineProvider(p); await loadRefine(); message = `${refine?.label}로 다듬어요` } catch (e) { error = String(e) }
+  }
   async function saveKey() {
-    if (!keyInput.trim()) return
-    try { await api.setClaudeKey(keyInput.trim()); keyInput = ''; hasKey = true; message = 'API 키를 저장했어요' } catch (e) { error = String(e) }
+    if (!keyInput.trim() || !refine) return
+    try { await api.setRefineKey(refine.provider, keyInput.trim()); await loadRefine(); message = `${refine?.label} API 키를 저장했어요` } catch (e) { error = String(e) }
   }
   async function clearKey() {
-    try { await api.setClaudeKey(null); hasKey = false; message = 'API 키를 지웠어요' } catch (e) { error = String(e) }
+    if (!refine) return
+    try { await api.setRefineKey(refine.provider, null); await loadRefine(); message = 'API 키를 지웠어요' } catch (e) { error = String(e) }
   }
   async function saveModel() {
-    try { await api.setClaudeModel(model.trim() || null); message = '모델을 저장했어요' } catch (e) { error = String(e) }
+    if (!refine) return
+    try { await api.setRefineModel(refine.provider, model.trim() || null); await loadRefine(); message = '모델을 저장했어요' } catch (e) { error = String(e) }
   }
   async function saveTrim() {
     try { await api.setCardRouteTrim(trim); message = trim ? '새 카드부터 출발·도착 부근을 가려요' : '카드에 경로 전체를 그려요' } catch (e) { error = String(e) }
@@ -70,16 +80,26 @@
   <h2 id="settings-title">설정</h2>
 
   <section>
-    <h3>Claude로 다듬기</h3>
-    <p class="muted">API 키는 이 컴퓨터의 키 보관함에만 저장되고, 저장한 뒤에는 다시 보여 주지 않아요.</p>
-    <div class="row">
-      <input type="password" placeholder={hasKey ? '저장된 키 있음' : 'sk-ant-…'} bind:value={keyInput} aria-label="Claude API 키" autocomplete="off" />
-      <button class="btn primary" onclick={saveKey} disabled={!keyInput.trim()}>키 저장</button>
-      {#if hasKey}<button class="btn" onclick={clearKey}>키 지우기</button>{/if}
-    </div>
-    <label class="field">모델
-      <input bind:value={model} onchange={saveModel} placeholder="claude-opus-5-5" />
-    </label>
+    <h3>글 다듬기 AI</h3>
+    {#if refine}
+      <div class="choices" role="radiogroup" aria-label="글 다듬기 AI">
+        {#each refine.providers as p}
+          <label class="choice" class:on={p.id === refine.provider}>
+            <input type="radio" name="refine-provider" checked={p.id === refine.provider} onchange={() => chooseProvider(p.id)} />
+            {p.label}<span class="sub">{p.hasKey ? '키 있음' : '키 없음'}</span>
+          </label>
+        {/each}
+      </div>
+      <p class="muted">{refine.label} API 키는 이 컴퓨터의 키 보관함에만 저장되고, 저장한 뒤에는 다시 보여 주지 않아요. "사진도 보내기"를 켜면 위치 정보를 지운 작은 사진이 {refine.company} 서버로 가요.</p>
+      <div class="row">
+        <input type="password" placeholder={refine.hasKey ? '저장된 키 있음' : KEY_HINT[refine.provider]} bind:value={keyInput} aria-label="{refine.label} API 키" autocomplete="off" />
+        <button class="btn primary" onclick={saveKey} disabled={!keyInput.trim()}>키 저장</button>
+        {#if refine.hasKey}<button class="btn" onclick={clearKey}>키 지우기</button>{/if}
+      </div>
+      <label class="field">모델
+        <input bind:value={model} onchange={saveModel} />
+      </label>
+    {/if}
   </section>
 
   <section>
@@ -129,6 +149,11 @@
   .muted { color: var(--muted); font-size: 13px; margin: 2px 0 8px; }
   .ok { color: #13704c; } .error { color: #b42318; }
   .status { margin: 8px 0 0; font-size: 14px; }
+  .choices { display: flex; gap: 8px; margin: 6px 0 4px; }
+  .choice { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  .choice.on { border-color: var(--ride); background: color-mix(in srgb, var(--ride) 8%, white); }
+  .choice input { width: auto; min-width: 0; flex: none; }
+  .choice .sub { font-weight: 500; font-size: 12px; color: var(--muted); }
   .status.bad { color: #b42318; }
   .row { margin-top: 8px; }
   .foot { display: flex; justify-content: flex-end; margin-top: 18px; }
