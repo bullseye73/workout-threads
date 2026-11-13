@@ -1,9 +1,11 @@
 //! 인터넷을 쓰는 보강 기능: 장소(Nominatim), 날씨(Open-Meteo), Claude 다듬기.
 //! HTTP는 `Http` 트레이트 뒤에 두어 테스트는 고정 응답으로 오프라인 실행한다.
 pub mod claude;
+pub mod gemini;
 pub mod geocode;
 #[cfg(feature = "mock")]
 pub mod mock;
+pub mod refine;
 pub mod weather;
 
 use std::time::Duration;
