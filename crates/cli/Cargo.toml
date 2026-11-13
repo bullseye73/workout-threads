@@ -1,0 +1,19 @@
+[package]
+name = "workout-cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+workout-card = { version = "0.1.0", path = "../card" }
+workout-core = { version = "0.1.0", path = "../core" }
+workout-post = { version = "0.1.0", path = "../post" }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+workout-testkit = { path = "../testkit" }
+
+[lib]
+name = "workout_cli"
+path = "src/lib.rs"

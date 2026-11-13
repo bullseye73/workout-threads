@@ -1,0 +1,19 @@
+target/
+.superpowers/
+ui/node_modules/
+ui/dist/
+src-tauri/gen/
+# 실제 운동 기록·사진·라이브러리 DB는 저장소에 올리지 않는다 (GPS로 집 위치가 드러날 수 있음).
+# 이 파일들은 앱 데이터 폴더와 구글 드라이브에만 저장된다.
+*.fit
+*.FIT
+*.jpg
+*.jpeg
+*.JPG
+*.JPEG
+*.heic
+*.HEIC
+*.db
+*.db-journal
+*.db.restore
+.backup/

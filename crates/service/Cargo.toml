@@ -1,0 +1,24 @@
+[package]
+name = "workout-service"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+keyring = "4.2.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+ts-rs = "12.0.1"
+workout-card = { version = "0.1.0", path = "../card" }
+workout-core = { version = "0.1.0", path = "../core" }
+workout-enrich = { version = "0.1.0", path = "../enrich" }
+workout-gdrive = { version = "0.1.0", path = "../gdrive" }
+workout-post = { version = "0.1.0", path = "../post" }
+workout-store = { version = "0.1.0", path = "../store" }
+
+[dev-dependencies]
+rusqlite = { version = "0.42.0", features = ["bundled"] }
+tempfile = "3.27.0"
+workout-enrich = { path = "../enrich", features = ["mock"] }
+workout-gdrive = { path = "../gdrive", features = ["fake"] }
+workout-testkit = { path = "../testkit" }

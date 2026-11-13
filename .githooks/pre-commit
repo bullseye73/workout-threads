@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Git pre-commit hook for workout-app
+# 커밋 전 코드 포맷(cargo fmt)과 린트(cargo clippy)를 자동 검사합니다.
+
+set -eo pipefail
+
+# PATH에 cargo 경로 포함 (터미널 및 Git GUI 클라이언트 호환)
+export PATH="$HOME/.cargo/bin:$PATH"
+
+if ! command -v cargo &> /dev/null; then
+  echo "⚠️  [pre-commit] 'cargo' 명령어를 찾을 수 없습니다. PATH 설정을 확인해주세요." >&2
+  exit 1
+fi
+
+# workout-app 디렉터리로 이동하여 실행
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "🔍 [pre-commit] 1/2: 코드 포맷 검사 (cargo fmt --check)..."
+if ! cargo fmt --all -- --check; then
+  echo "" >&2
+  echo "❌ [pre-commit] 코드 포맷 규칙에 맞지 않는 파일이 있습니다." >&2
+  echo "👉 'cargo fmt'를 실행하여 자동 정렬한 뒤 스테이징 후 다시 커밋해주세요." >&2
+  echo "   (강제 커밋 시: git commit --no-verify)" >&2
+  exit 1
+fi
+
+echo "🔍 [pre-commit] 2/2: 린트 및 정적 분석 (cargo clippy)..."
+if ! cargo clippy --all-targets --all-features -- -D warnings; then
+  echo "" >&2
+  echo "❌ [pre-commit] clippy 린트 경고/오류가 발견되었습니다." >&2
+  echo "👉 위의 지적 사항을 수정한 후 다시 커밋해주세요." >&2
+  echo "   (강제 커밋 시: git commit --no-verify)" >&2
+  exit 1
+fi
+
+echo "✅ [pre-commit] 모든 코드 스타일 및 린트 검사를 통과했습니다."
+exit 0

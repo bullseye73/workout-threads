@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/card", "crates/post", "crates/cli", "crates/store", "crates/service", "crates/enrich", "crates/gdrive", "crates/testkit", "src-tauri"]
