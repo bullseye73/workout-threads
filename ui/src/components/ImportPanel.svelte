@@ -7,7 +7,7 @@
   import type { MonthView } from '$lib/bindings/MonthView'
   import { importSummary, km } from '$lib/format'
 
-  let { report, onClose, title = '가져오기 결과' }: { report: ImportReport; onClose: () => void; title?: string } = $props()
+  let { report, onClose, title = '가져오기 결과', showSummary = true }: { report: ImportReport; onClose: () => void; title?: string; showSummary?: boolean } = $props()
   let choices = $state<{ id: string; label: string }[]>([])
   let assigned = $state<Record<number, string>>({})
   let error = $state('')
@@ -37,7 +37,7 @@
 <Dialog.Content class="max-h-[80vh] overflow-auto sm:max-w-xl">
   <Dialog.Header>
     <Dialog.Title>{title}</Dialog.Title>
-    {#if title === '가져오기 결과'}<Dialog.Description class="font-semibold text-foreground">{importSummary(report)}</Dialog.Description>{/if}
+    {#if showSummary}<Dialog.Description class="font-semibold text-foreground">{importSummary(report)}</Dialog.Description>{/if}
   </Dialog.Header>
   {#if report.skipped.length}
     <h3>날짜가 달라 넣지 않은 파일</h3>

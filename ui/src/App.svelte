@@ -3,6 +3,7 @@
   import Settings from './components/Settings.svelte'
   import { ModeWatcher } from 'mode-watcher'
   import Workbench from './components/workbench/Workbench.svelte'
+  import { dayLabel, type DateImported } from '$lib/workbench'
   import ConfirmHost from '$lib/components/ConfirmHost.svelte'
   import { installScrollReveal } from '$lib/scrollReveal'
   import { api, isTauri } from './lib/api'
@@ -18,12 +19,15 @@
   let showSettings = $state(false)
   let enriching = $state('')
 
-  async function runImport(paths: string[]) {
+  /** date가 있으면 그 날짜의 FIT·사진만 넣는다(날짜를 골라 기록 추가). */
+  async function runImport(paths: string[], date?: string) {
     if (!paths.length) return
     importing = true; importError = ''
     try {
-      panelTitle = '가져오기 결과'
-      report = await api.importPaths(paths)
+      panelTitle = date ? `${dayLabel(date)} 기록 추가 결과` : '가져오기 결과'
+      const r = date ? await api.importForDate(date, paths) : await api.importPaths(paths)
+      report = r
+      if (date) dateImported = { date, report: r, n: (dateImported?.n ?? 0) + 1 }
       reloadKey++
       void enrichNew(report.addedActivities)
     } catch (e) {
@@ -45,6 +49,9 @@
 
   // 예전에 가져와 아직 운동에 붙지 않은 사진을 다시 보여 준다.
   let panelTitle = $state('가져오기 결과')
+  // 기록 추가 패널이 열려 있으면 그 날짜 (끌어다 놓기도 이 날짜로 등록).
+  let dropDate = $state<string | null>(null)
+  let dateImported = $state<DateImported | null>(null)
   async function showUnmatched() {
     const photos = await api.unmatchedPhotos()
     panelTitle = '운동에 안 붙은 사진'
@@ -58,7 +65,7 @@
     if (!isTauri()) return
     let unlisten: (() => void) | undefined
     import('@tauri-apps/api/webview').then(({ getCurrentWebview }) =>
-      getCurrentWebview().onDragDropEvent(e => { if (e.payload.type === 'drop') runImport(e.payload.paths) })
+      getCurrentWebview().onDragDropEvent(e => { if (e.payload.type === 'drop') runImport(e.payload.paths, dropDate ?? undefined) })
     ).then(u => (unlisten = u))
     return () => unlisten?.()
   })
@@ -75,10 +82,13 @@
     </div>
   {/if}
   <Workbench {year} {month} {reloadKey} onMonth={(y, m) => { year = y; month = m }}
+    {importing} {dateImported}
     onImport={async kind => runImport(await api.pickImport(kind))}
+    onImportForDate={async (date, kind) => runImport(await api.pickImport(kind), date)}
+    onDropTarget={d => (dropDate = d)}
     onUnmatched={showUnmatched} onSettings={() => (showSettings = true)} />
   {#if showSettings}<Settings onClose={() => { showSettings = false; reloadKey++ }} />{/if}
-  {#if report}<ImportPanel {report} title={panelTitle} onClose={() => { report = null; reloadKey++ }} />{/if}
+  {#if report}<ImportPanel {report} title={panelTitle} showSummary={panelTitle !== '운동에 안 붙은 사진'} onClose={() => { report = null; reloadKey++ }} />{/if}
 </main>
 
 <style>

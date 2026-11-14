@@ -1,12 +1,15 @@
 // 작업대 화면 계산: 한 달 사진 띠, 주별 목록, 거르기, 선택 유지, 목표 진행.
 import type { DayDto } from './bindings/DayDto'
 import type { DayItemDto } from './bindings/DayItemDto'
+import type { ImportReport } from './bindings/ImportReport'
 import type { MonthView } from './bindings/MonthView'
 
 export type Item = DayItemDto & { date: string }
 export type RibbonDay = { day: number; date: string; weekend: boolean; today: boolean; items: Item[] }
 export type WeekGroup = { weekStart: string; label: string; km: number; items: Item[] }
 export type ListFilter = 'all' | 'ready' | 'published'
+/** 날짜를 골라 등록한 결과 (n은 같은 결과를 다시 알리기 위한 일련번호). */
+export type DateImported = { date: string; report: ImportReport; n: number }
 export type GoalProgress = { rideRatio: number; runRatio: number; paceRatio: number | null; perDayKm: number | null }
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -91,4 +94,15 @@ function hms(sec: number): string {
 export function itemSummary(i: DayItemDto): string {
   const rate = i.speedKmh !== null ? `${i.speedKmh.toFixed(1)}km/h` : i.pace ? `${i.pace}/km` : ''
   return rate ? `${hms(i.movingS)}  ${rate}` : hms(i.movingS)
+}
+
+/** "2026-11-04" → "11월 4일". */
+export function dayLabel(iso: string): string {
+  return `${Number(iso.slice(5, 7))}월 ${Number(iso.slice(8, 10))}일`
+}
+
+/** 날짜를 골라 등록한 뒤 열 운동: 그날 새로 들어온 운동 → 그날 첫 운동 → 없음. */
+export function pickAfterImport(report: ImportReport, days: DayDto[], date: string): string | null {
+  const items = days.find(d => d.date === date)?.items ?? []
+  return items.find(i => report.addedActivities.includes(i.activityId))?.activityId ?? items[0]?.activityId ?? null
 }

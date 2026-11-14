@@ -18,7 +18,7 @@
   import { ask } from '$lib/confirm.svelte'
   import { createPostEditor } from '$lib/postEditor.svelte'
 
-  let { id, status, onChanged }: { id: string; status: PostStatus; onChanged: () => void } = $props()
+  let { id, status, onChanged, onAddForDate }: { id: string; status: PostStatus; onChanged: () => void; onAddForDate?: () => void } = $props()
 
   let detail = $state<ActivityDetail | null>(null)
   let error = $state('')
@@ -91,6 +91,7 @@
         <Tabs.Trigger value="record">기록</Tabs.Trigger>
         <Tabs.Trigger value="post">게시 준비</Tabs.Trigger>
       </Tabs.List>
+      {#if onAddForDate}<Button variant="ghost" size="sm" onclick={onAddForDate}>이 날짜에 기록 추가</Button>{/if}
       <Button size="sm" onclick={copyPost}>글 복사</Button>
     </header>
     {#if note}<p class="-mt-2 mb-3 text-sm text-done" role="status">{note}</p>{/if}

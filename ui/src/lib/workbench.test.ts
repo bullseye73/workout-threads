@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { DayDto } from './bindings/DayDto'
 import type { MonthView } from './bindings/MonthView'
 import { dayItem } from './fixtures'
-import { filterGroups, goalProgress, groupByWeek, itemSummary, pickSelection, ribbonDays } from './workbench'
+import { dayLabel, filterGroups, goalProgress, groupByWeek, itemSummary, pickAfterImport, pickSelection, ribbonDays } from './workbench'
 
 const NOV: DayDto[] = [
   { date: '2026-11-02', items: [dayItem({ activityId: 'r2', sport: 'running', km: 8.1, postStatus: 'ready' })] },
@@ -88,5 +88,22 @@ describe('itemSummary', () => {
   })
   it('shows only time when neither is known', () => {
     expect(itemSummary(dayItem({ movingS: 59, speedKmh: null }))).toBe('0:59')
+  })
+})
+
+describe('dayLabel', () => {
+  it('reads as month and day without leading zeros', () => { expect(dayLabel('2026-11-04')).toBe('11월 4일') })
+})
+
+describe('pickAfterImport', () => {
+  const report = (added: string[]) => ({ addedActivities: added, duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: [], skipped: [] })
+  it('opens the new workout on that date', () => {
+    expect(pickAfterImport(report(['x', 'c8']), NOV, '2026-11-08')).toBe('c8')
+  })
+  it('falls back to the first workout of that date', () => {
+    expect(pickAfterImport(report([]), NOV, '2026-11-08')).toBe('c8')
+  })
+  it('is null when the date still has no workout', () => {
+    expect(pickAfterImport(report([]), NOV, '2026-11-20')).toBeNull()
   })
 })
