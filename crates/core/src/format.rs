@@ -1,5 +1,5 @@
 //! 카드와 글이 함께 쓰는 한국어 표시 형식.
-use chrono::{Datelike, NaiveDate, Weekday};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, Timelike, Weekday};
 
 use crate::model::Sport;
 
@@ -62,4 +62,14 @@ pub fn sport_ko(s: Sport) -> &'static str {
         Sport::Hiking => "하이킹",
         Sport::Other(_) => "운동",
     }
+}
+
+/// 운동 제목 "일요일 오전 라이딩" (카드와 목록이 같이 쓴다).
+pub fn activity_title(local: NaiveDateTime, sport: Sport) -> String {
+    format!(
+        "{} {} {}",
+        weekday_ko(local.date()),
+        time_of_day_ko(local.hour()),
+        sport_ko(sport)
+    )
 }

@@ -43,3 +43,16 @@ fn sport_roundtrip() {
         assert_eq!(Sport::from_fit(c).to_fit(), c);
     }
 }
+
+#[test]
+fn activity_title_joins_weekday_time_and_sport() {
+    let d = NaiveDate::from_ymd_opt(2026, 11, 8).unwrap();
+    assert_eq!(
+        activity_title(d.and_hms_opt(9, 12, 0).unwrap(), Sport::Cycling),
+        "일요일 오전 라이딩"
+    );
+    assert_eq!(
+        activity_title(d.and_hms_opt(18, 30, 0).unwrap(), Sport::Running),
+        "일요일 저녁 러닝"
+    );
+}

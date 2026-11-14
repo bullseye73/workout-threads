@@ -72,3 +72,34 @@ fn unknown_activity_is_not_found() {
         Err(ServiceError::NotFound(_))
     ));
 }
+
+#[test]
+fn month_view_items_carry_list_fields() {
+    workout_testkit::require_samples!();
+    let (_t, mut lib) = temp_library();
+    let fit = std::fs::read_dir(sample_path("20261011"))
+        .unwrap()
+        .map(|e| e.unwrap().path())
+        .find(|p| p.extension().is_some_and(|x| x == "fit"))
+        .unwrap();
+    lib.import_paths(&[sample_path("20261025"), fit]).unwrap();
+    let v = lib.month_view(2026, 10).unwrap();
+    let no_photo = &v.days[0].items[0];
+    let with_cards = &v.days[1].items[0];
+
+    assert_eq!(with_cards.title, "일요일 오후 라이딩");
+    assert_eq!(with_cards.start_time.len(), 5);
+    assert_eq!(&with_cards.start_time[2..3], ":");
+    assert!(with_cards.moving_s > 0.0);
+    assert!(with_cards.speed_kmh.is_some() && with_cards.pace.is_none());
+    assert_eq!(with_cards.card_count, 2);
+    let post = lib.post_view(&with_cards.activity_id).unwrap();
+    assert_eq!(
+        with_cards.cover_card.as_deref(),
+        Some(post.card_paths[0].as_str())
+    );
+    assert!(std::path::Path::new(with_cards.cover_card.as_ref().unwrap()).is_absolute());
+
+    assert_eq!(no_photo.card_count, 0);
+    assert!(no_photo.cover_card.is_none());
+}

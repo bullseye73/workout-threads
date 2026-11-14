@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildMonthGrid } from './calendar'
+import { dayItem } from './fixtures'
 
 describe('buildMonthGrid', () => {
   it('november 2026 grid', () => {
@@ -12,7 +13,7 @@ describe('buildMonthGrid', () => {
   })
   it('october 2026 grid has 5 weeks', () => { expect(buildMonthGrid(2026, 10, []).length).toBe(5) })
   it('attaches day items', () => {
-    const items = [{ activityId: 'a', sport: 'cycling' as const, km: 48, postStatus: 'ready' as const }]
+    const items = [dayItem({ km: 48, postStatus: 'ready' })]
     const g = buildMonthGrid(2026, 10, [{ date: '2026-10-25', items }])
     expect(g.flat().find(c => c.date === '2026-10-25')!.items).toEqual(items)
   })

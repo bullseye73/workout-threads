@@ -102,6 +102,18 @@ pub struct DayItemDto {
     pub sport: SportKind,
     pub km: f64,
     pub post_status: PostStatus,
+    /// "일요일 오전 라이딩".
+    pub title: String,
+    /// 현지 시작 시각 "07:12".
+    pub start_time: String,
+    pub moving_s: f64,
+    /// 라이딩만.
+    pub speed_kmh: Option<f64>,
+    /// 라이딩이 아닌 종목만, "5'43\"".
+    pub pace: Option<String>,
+    /// 첫 카드 절대 경로.
+    pub cover_card: Option<String>,
+    pub card_count: u32,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]

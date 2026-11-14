@@ -1,6 +1,6 @@
 //! 대시보드와 운동 상세 조회.
 use workout_card::card_data;
-use workout_core::format::{hms, pace_per_km, speed_kmh};
+use workout_core::format::{activity_title, hms, pace_per_km, speed_kmh};
 use workout_core::model::{Sample, Sport};
 use workout_core::splits::km_splits;
 use workout_core::stats::{SportStats, month_stats};
@@ -64,11 +64,27 @@ impl Library {
         for (date, items) in &st.days {
             let mut out = Vec::new();
             for it in items {
+                let h = headers
+                    .iter()
+                    .find(|h| h.id == it.activity_id)
+                    .ok_or_else(|| ServiceError::NotFound(it.activity_id.clone()))?;
+                let sm = &h.summary;
+                let has_dist = sm.distance_m > 0.0;
+                let cards = self.card_paths(&it.activity_id)?;
                 out.push(DayItemDto {
                     activity_id: it.activity_id.clone(),
                     sport: it.sport.into(),
                     km: it.distance_m / 1000.0,
                     post_status: self.post_status(&it.activity_id)?,
+                    title: activity_title(h.start_local(), h.sport),
+                    start_time: h.start_local().format("%H:%M").to_string(),
+                    moving_s: sm.moving_s,
+                    speed_kmh: (has_dist && h.sport == Sport::Cycling)
+                        .then(|| speed_kmh(sm.moving_s, sm.distance_m)),
+                    pace: (has_dist && h.sport != Sport::Cycling)
+                        .then(|| pace_per_km(sm.moving_s, sm.distance_m)),
+                    card_count: cards.len() as u32,
+                    cover_card: cards.into_iter().next(),
                 });
             }
             days.push(DayDto {

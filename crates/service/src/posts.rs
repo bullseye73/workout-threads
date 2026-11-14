@@ -6,6 +6,16 @@ use workout_store::PublishRow;
 use crate::*;
 
 impl Library {
+    /// 운동에 붙은 카드의 절대 경로 (사진 순서).
+    pub(crate) fn card_paths(&self, activity_id: &str) -> Result<Vec<String>> {
+        Ok(self
+            .store
+            .photos_for(activity_id)?
+            .iter()
+            .filter_map(|p| p.card_path.as_deref().map(|c| self.abs(c)))
+            .collect())
+    }
+
     pub fn post_view(&self, activity_id: &str) -> Result<PostView> {
         let row = self
             .store
@@ -15,12 +25,7 @@ impl Library {
             Some(p) => p,
             None => self.template_post(&row.header, None)?,
         };
-        let cards: Vec<String> = self
-            .store
-            .photos_for(activity_id)?
-            .iter()
-            .filter_map(|p| p.card_path.as_deref().map(|c| self.abs(c)))
-            .collect();
+        let cards = self.card_paths(activity_id)?;
         let folder = row
             .fit_path
             .rsplit_once('/')

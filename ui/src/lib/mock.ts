@@ -25,6 +25,10 @@ function pace(sec: number, km: number): string {
   const p = Math.floor(sec / km)
   return `${Math.floor(p / 60)}'${String(p % 60).padStart(2, '0')}"`
 }
+function mockTitle(a: MockActivity): string {
+  const tod = a.hour < 12 ? '오전' : a.hour < 17 ? '오후' : '저녁'
+  return `${WEEKDAYS[new Date(a.date + 'T00:00:00Z').getUTCDay()]} ${tod} ${a.sport === 'running' ? '러닝' : '라이딩'}`
+}
 function mondayOf(d: Date): Date {
   const x = new Date(d)
   x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7))
@@ -62,7 +66,11 @@ export function mockMonth(year: number, month: number): MonthView {
     avgHr: hrSecs > 0 ? hrActs.reduce((t, a) => t + a.hr! * a.movingS, 0) / hrSecs : null,
     weekly,
     days: acts.map(a => ({ date: a.date, items: [{ activityId: a.id, sport: a.sport, km: a.km,
-      postStatus: mockPosts.get(a.id)?.status ?? (a.id === 'm1' ? 'published' : a.gps ? 'ready' : 'none') }] })),
+      postStatus: mockPosts.get(a.id)?.status ?? (a.id === 'm1' ? 'published' : a.gps ? 'ready' : 'none'),
+      title: mockTitle(a), startTime: `${String(a.hour).padStart(2, '0')}:10`, movingS: a.movingS,
+      speedKmh: a.sport === 'cycling' ? a.km / a.movingS * 3600 : null,
+      pace: a.sport === 'cycling' ? null : pace(a.movingS, a.km),
+      coverCard: null, cardCount: 0 }] })),
   }
 }
 export const mockGoal: { value: number | null } = { value: 300 }
@@ -76,11 +84,9 @@ export function mockDetail(id: string): ActivityDetail {
     return [center[0] + r * Math.sin(t) * 0.8, center[1] + r * (1 - Math.cos(t)) * 1.3]
   })
   const speed = a.km / a.movingS * 3600
-  const date = new Date(a.date + 'T00:00:00Z')
-  const tod = a.hour < 12 ? '오전' : a.hour < 17 ? '오후' : '저녁'
   return {
     id: a.id, sport: a.sport,
-    title: `${WEEKDAYS[date.getUTCDay()]} ${tod} ${a.sport === 'running' ? '러닝' : '라이딩'}`,
+    title: mockTitle(a),
     date: a.date.replaceAll('-', '.'),
     metrics: { distanceKm: a.km, moving: hms(a.movingS), elapsed: hms(a.movingS * 1.1),
       pace: a.sport === 'running' ? pace(a.movingS, a.km) : null,

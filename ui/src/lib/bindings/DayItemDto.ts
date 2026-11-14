@@ -2,4 +2,24 @@
 import type { PostStatus } from "./PostStatus";
 import type { SportKind } from "./SportKind";
 
-export type DayItemDto = { activityId: string, sport: SportKind, km: number, postStatus: PostStatus, };
+export type DayItemDto = { activityId: string, sport: SportKind, km: number, postStatus: PostStatus, 
+/**
+ * "일요일 오전 라이딩".
+ */
+title: string, 
+/**
+ * 현지 시작 시각 "07:12".
+ */
+startTime: string, movingS: number, 
+/**
+ * 라이딩만.
+ */
+speedKmh: number | null, 
+/**
+ * 라이딩이 아닌 종목만, "5'43\"".
+ */
+pace: string | null, 
+/**
+ * 첫 카드 절대 경로.
+ */
+coverCard: string | null, cardCount: number, };

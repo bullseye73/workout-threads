@@ -1,4 +1,4 @@
-use workout_core::format::{hms, pace_per_km, speed_kmh, sport_ko, time_of_day_ko, weekday_ko};
+use workout_core::format::{activity_title, hms, pace_per_km, speed_kmh};
 use workout_core::model::{Activity, Sport};
 use workout_core::route::simplify_route;
 
@@ -41,12 +41,7 @@ pub fn card_data_with(a: &Activity, trim_m: f64) -> CardData {
     let cos0 = pts.first().map(|p| p.lat.to_radians().cos()).unwrap_or(1.0);
     CardData {
         date: local.format("%Y.%m.%d").to_string(),
-        title: format!(
-            "{} {} {}",
-            weekday_ko(local.date()),
-            time_of_day_ko(workout_core::chrono::Timelike::hour(&local)),
-            sport_ko(h.sport)
-        ),
+        title: activity_title(local, h.sport),
         distance: format!("{:.2}", sm.distance_m / 1000.0),
         sub: parts.join("  ·  "),
         route: pts.iter().map(|p| [p.lon * cos0, p.lat]).collect(),
