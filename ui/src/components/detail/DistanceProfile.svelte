@@ -2,7 +2,7 @@
   // 거리 축 그래프 3줄(고도, 심박, 속도/페이스). 줄마다 왼쪽에 이름·값·평균/최고를 크게 두고,
   // 심박·속도 선은 값에 따라 낮음(차가운 색) → 높음(뜨거운 색)으로 칠한다. 위쪽에 사진 핀.
   import { Chart, Filler, LinearScale, LineController, LineElement, PointElement, type Plugin } from 'chart.js'
-  import { onDestroy } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import { api } from '$lib/api'
   import { heatT, mixHex, seriesStats, valueRange } from '$lib/heat'
   import type { Pin } from '$lib/profile'
@@ -90,8 +90,10 @@
     })
   }
 
+  // build()는 색(stops)을 쓰고 차트를 만들며 그 색을 바로 읽는다. 추적하면 스스로를 다시 부르므로
+  // 캔버스·줄 구성이 바뀔 때만 다시 그리고, build 안의 읽기·쓰기는 추적하지 않는다.
   $effect(() => {
-    if (canvases.length === rows.length && canvases.every(Boolean)) build()
+    if (canvases.length === rows.length && canvases.every(Boolean)) untrack(build)
   })
   $effect(() => onThemeApplied(build))
   $effect(() => {
