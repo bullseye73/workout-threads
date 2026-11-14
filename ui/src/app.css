@@ -1,35 +1,133 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* 테마: mode-watcher가 <html>에 .dark를 붙인다 (시스템 / 밝게 / 어둡게). */
+@custom-variant dark (&:is(.dark *));
+
 @font-face { font-family: 'Pretendard'; font-weight: 500; src: url('../../crates/card/assets/fonts/Pretendard-Medium.otf') format('opentype'); }
 @font-face { font-family: 'Pretendard'; font-weight: 600; src: url('../../crates/card/assets/fonts/Pretendard-SemiBold.otf') format('opentype'); }
 @font-face { font-family: 'Pretendard'; font-weight: 700; src: url('../../crates/card/assets/fonts/Pretendard-Bold.otf') format('opentype'); }
 
+/* ── 색 토큰 (밝게) ── 컴포넌트는 이 이름만 쓴다. */
 :root {
-  --paper: #f6f7f9;
-  --surface: #ffffff;
-  --ink: #1b2430;
-  --muted: #6b7684;
-  --line: #e3e7ec;
+  --background: #eceef0;
+  --foreground: #161e28;
+  --card: #ffffff;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+  --muted: #f3f5f6;
+  --muted-foreground: #5d6977;
+  --sunken: #e2e6e9;
+  --faint: #98a2ad;
+  --border: #dce0e4;
+  --input: var(--border);
+  --selected: #e8effe;
+  --primary: var(--foreground);
+  --primary-foreground: var(--background);
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --accent: var(--muted);
+  --accent-foreground: var(--foreground);
+  --ring: var(--ride);
   --ride: #2f6feb;
-  --run: #f07a2a;
-  --done: #1f9d6b;
-  --track: #e9edf2;
+  --run: #e2661a;
+  --done: #148a5c;
+  --wait: #b8740f;
+  --hr: #d93f4c;
+  --alt: #6d7a88;
+  --destructive: #b42318;
+  --on-photo: #ffffff;
+  --radius: 10px;
+
+  /* 옛 화면용 (Task 6에서 지움) */
+  --paper: var(--background);
+  --surface: var(--card);
+  --ink: var(--foreground);
+  --line: var(--border);
+  --track: var(--sunken);
   --radius-lg: 18px;
   --radius-sm: 8px;
-  font-family: 'Pretendard', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--ink);
-  background: var(--paper);
-  font-variant-numeric: tabular-nums;
-  -webkit-font-smoothing: antialiased;
 }
-* { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; }
-button, input, textarea, select { font: inherit; color: inherit; }
-button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--ride); outline-offset: 2px; }
+
+/* ── 색 토큰 (어둡게) ── */
+.dark {
+  --background: #0e1115;
+  --foreground: #e6e9ed;
+  --card: #161a1f;
+  --muted: #1d2228;
+  --muted-foreground: #97a1ad;
+  --sunken: #0a0c0f;
+  --faint: #5b6570;
+  --border: #262c33;
+  --selected: #1c2840;
+  --ride: #6b98ff;
+  --run: #ff9150;
+  --done: #3cc48e;
+  --wait: #e8b04b;
+  --hr: #ff6b77;
+  --alt: #8b97a4;
+  --destructive: #ff7b6b;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Pretendard', system-ui, sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-sunken: var(--sunken);
+  --color-faint: var(--faint);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-selected: var(--selected);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-ride: var(--ride);
+  --color-run: var(--run);
+  --color-done: var(--done);
+  --color-wait: var(--wait);
+  --color-hr: var(--hr);
+  --color-alt: var(--alt);
+  --color-destructive: var(--destructive);
+  --color-on-photo: var(--on-photo);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { color-scheme: light; }
+  body {
+    @apply bg-background text-foreground font-sans;
+    margin: 0;
+    min-width: 320px;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 1.45;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+}
+
+/* 옛 화면용 버튼 (Task 6에서 지움) */
 .btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; }
-.btn:hover { border-color: var(--muted); }
-.btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.btn:hover { border-color: var(--muted-foreground); }
+.btn.primary { background: var(--ink); color: var(--background); border-color: var(--ink); }
 .btn:disabled { opacity: .5; cursor: default; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

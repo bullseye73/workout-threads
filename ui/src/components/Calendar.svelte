@@ -28,11 +28,11 @@
 
 <style>
   .cal { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-  .head { padding: 8px 10px; font-size: 13px; color: var(--muted); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .head { padding: 8px 10px; font-size: 13px; color: var(--muted-foreground); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .cell { min-height: 92px; padding: 6px 8px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; background: var(--surface); }
   .cell.out { background: transparent; }
   .cell.out .num { color: #b5bdc7; }
-  .num { font-size: 13px; color: var(--muted); }
+  .num { font-size: 13px; color: var(--muted-foreground); }
   .today .num { color: var(--surface); background: var(--ink); border-radius: 999px; width: 22px; height: 22px; display: grid; place-items: center; }
   .item { display: flex; align-items: center; gap: 4px; border: 0; border-radius: var(--radius-sm); padding: 3px 6px; text-align: left; font-size: 13px; font-weight: 600; }
   .item.cycling { background: color-mix(in srgb, var(--ride) 12%, white); color: #1d4fb8; }

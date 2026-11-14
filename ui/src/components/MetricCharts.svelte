@@ -49,6 +49,6 @@
 <style>
   .charts { display: grid; gap: 12px; }
   figure { margin: 0; }
-  figcaption { font-size: 13px; color: var(--muted); margin-bottom: 2px; }
+  figcaption { font-size: 13px; color: var(--muted-foreground); margin-bottom: 2px; }
   .box { height: 120px; position: relative; }
 </style>

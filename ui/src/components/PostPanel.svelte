@@ -168,18 +168,18 @@
   .status { font-size: 13px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--track); }
   .status.ready { background: color-mix(in srgb, var(--ride) 14%, white); color: #1d4fb8; }
   .status.published { background: color-mix(in srgb, var(--done) 16%, white); color: #13704c; }
-  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--track); color: var(--muted); margin-left: 6px; }
+  .tag { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--track); color: var(--muted-foreground); margin-left: 6px; }
   .facts { display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: center; padding: 14px 16px; border-radius: 12px; background: var(--surface); margin-bottom: 6px; }
   .facts label { margin: 0; display: flex; align-items: center; }
   .fact { display: flex; gap: 8px; align-items: center; }
   .fact input { padding: 6px 10px; }
   .fact-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .link { border: 0; background: none; color: var(--ride); font-size: 13px; padding: 0; white-space: nowrap; }
-  .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  .hint { color: var(--muted-foreground); font-size: 13px; margin: 6px 0 0; }
   .check { display: flex; align-items: center; gap: 4px; font-size: 14px; margin: 0; color: var(--ink); }
   .check input { width: auto; }
   .card-actions { display: flex; gap: 6px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  label { display: block; font-size: 13px; color: var(--muted-foreground); margin: 10px 0 4px; }
   textarea, input { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; background: var(--surface); line-height: 1.6; }
   textarea { resize: vertical; font-size: 16px; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
@@ -187,7 +187,7 @@
   .btn.done { border-color: var(--done); color: #13704c; }
   .msg { color: #13704c; margin: 10px 0 0; }
   .error { color: #b42318; }
-  .muted { color: var(--muted); }
+  .muted { color: var(--muted-foreground); }
   .cards-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
   .cards img { width: 100%; border-radius: 10px; display: block; background: var(--track); }

@@ -77,7 +77,7 @@
   .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
   select { border: 1px solid var(--line); border-radius: 8px; padding: 4px 8px; background: var(--surface); }
   .ok { color: #13704c; font-weight: 600; }
-  .muted { color: var(--muted); margin: 0 0 8px; font-size: 14px; }
+  .muted { color: var(--muted-foreground); margin: 0 0 8px; font-size: 14px; }
   .error { color: #b42318; }
   .foot { display: flex; justify-content: flex-end; margin-top: 20px; }
 </style>

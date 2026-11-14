@@ -25,11 +25,11 @@
   .panel { position: fixed; top: 8vh; left: 50%; transform: translateX(-50%); width: min(860px, calc(100vw - 32px)); max-height: 84vh; overflow: auto;
     background: var(--surface); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(27, 36, 48, .25); }
   h2 { margin: 0 0 14px; font-size: 20px; }
-  h3 { margin: 0 0 6px; font-size: 14px; color: var(--muted); font-weight: 600; }
+  h3 { margin: 0 0 6px; font-size: 14px; color: var(--muted-foreground); font-weight: 600; }
   .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   pre { white-space: pre-wrap; font: inherit; line-height: 1.6; margin: 0; padding: 14px; border-radius: 10px; background: var(--paper); min-height: 160px; }
   .new pre { background: color-mix(in srgb, var(--ride) 7%, white); }
-  .note { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
+  .note { color: var(--muted-foreground); font-size: 13px; margin: 12px 0 0; }
   .foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
   @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
 </style>

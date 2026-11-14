@@ -20,5 +20,5 @@
   .track { flex: 1; width: 100%; max-width: 30px; display: flex; align-items: flex-end; }
   .bar { width: 100%; min-height: 0; border-radius: 6px 6px 2px 2px; }
   .val { font-size: 12px; font-weight: 600; min-height: 18px; }
-  .lbl { font-size: 12px; color: var(--muted); }
+  .lbl { font-size: 12px; color: var(--muted-foreground); }
 </style>

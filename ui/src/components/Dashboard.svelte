@@ -121,33 +121,33 @@
   .top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
   .month { display: flex; align-items: center; gap: 4px; }
   h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; margin: 0 6px; }
-  .nav { border: 0; background: none; font-size: 28px; line-height: 1; width: 36px; height: 36px; border-radius: 999px; color: var(--muted); }
+  .nav { border: 0; background: none; font-size: 28px; line-height: 1; width: 36px; height: 36px; border-radius: 999px; color: var(--muted-foreground); }
   .nav:hover { background: var(--track); color: var(--ink); }
   .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .backup { border: 0; background: none; color: var(--muted); font-size: 13px; padding: 0; display: flex; align-items: center; gap: 6px; }
+  .backup { border: 0; background: none; color: var(--muted-foreground); font-size: 13px; padding: 0; display: flex; align-items: center; gap: 6px; }
   .backup::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--done); }
   .backup.bad { color: #b42318; }
   .backup.bad::before { background: #b42318; }
-  .goal { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; }
+  .goal { display: flex; align-items: center; gap: 6px; color: var(--muted-foreground); font-size: 14px; }
   .goal input { width: 80px; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 5px 8px; background: var(--surface); text-align: right; }
   .hero { display: flex; align-items: center; gap: 48px; flex-wrap: wrap; background: var(--surface); border-radius: var(--radius-lg); padding: 28px 36px; }
   .total { font-size: 52px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-  .total small { font-size: 18px; font-weight: 600; margin-left: 3px; color: var(--muted); }
-  .goal-note { font-size: 13px; color: var(--muted); margin-top: 8px; max-width: 150px; }
+  .total small { font-size: 18px; font-weight: 600; margin-left: 3px; color: var(--muted-foreground); }
+  .goal-note { font-size: 13px; color: var(--muted-foreground); margin-top: 8px; max-width: 150px; }
   .stats { display: grid; grid-template-columns: repeat(2, minmax(150px, auto)); gap: 18px 48px; margin: 0; }
-  .stats dt { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .stats dt { font-size: 13px; color: var(--muted-foreground); display: flex; align-items: center; gap: 6px; }
   .stats dd { margin: 2px 0 0; font-size: 22px; font-weight: 700; }
-  .stats dd span { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 4px; }
-  .empty { flex-basis: 100%; margin: 0; color: var(--muted); }
+  .stats dd span { font-size: 14px; font-weight: 600; color: var(--muted-foreground); margin-left: 4px; }
+  .empty { flex-basis: 100%; margin: 0; color: var(--muted-foreground); }
   .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
   .sw.ride { background: var(--ride); }
   .sw.run { background: var(--run); }
   .focus { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
   .focus article { padding: 4px 4px 0; }
   h2 { font-size: 17px; font-weight: 700; margin: 0 0 2px; display: flex; align-items: center; gap: 8px; }
-  .kpi { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+  .kpi { margin: 0 0 14px; color: var(--muted-foreground); font-size: 14px; }
   .calendar h2 { margin-bottom: 10px; }
-  .legend { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .legend { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted-foreground); margin-top: 10px; }
   .legend .dot { width: 8px; height: 8px; border-radius: 999px; background: #c3cad3; margin-left: 10px; }
   .legend .dot:first-child { margin-left: 0; }
   .legend .dot.ready { background: var(--ride); }

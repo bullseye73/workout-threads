@@ -4,6 +4,8 @@
   import ImportPanel from './components/ImportPanel.svelte'
   import PostPanel from './components/PostPanel.svelte'
   import Settings from './components/Settings.svelte'
+  import { ModeWatcher } from 'mode-watcher'
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte'
   import { api, isTauri } from './lib/api'
   import type { ImportReport } from './lib/bindings/ImportReport'
 
@@ -63,7 +65,9 @@
   })
 </script>
 
+<ModeWatcher />
 <main>
+  <div class="flex justify-end mb-2"><ThemeToggle /></div>
   {#if importing}<p class="notice" role="status">가져오는 중… 사진이 많으면 카드를 만드는 데 시간이 걸려요.</p>{/if}
   {#if enriching}<p class="notice" role="status">{enriching}</p>{/if}
   {#if importError}<p class="notice error" role="alert">{importError}</p>{/if}

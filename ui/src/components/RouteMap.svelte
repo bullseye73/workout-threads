@@ -53,5 +53,5 @@
 
 <style>
   .map { height: 380px; border-radius: 14px; overflow: hidden; background: var(--track); }
-  .nogps { height: 140px; display: grid; place-items: center; border-radius: 14px; background: var(--track); color: var(--muted); padding: 16px; text-align: center; }
+  .nogps { height: 140px; display: grid; place-items: center; border-radius: 14px; background: var(--track); color: var(--muted-foreground); padding: 16px; text-align: center; }
 </style>

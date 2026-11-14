@@ -14,7 +14,7 @@
 
 <style>
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th { text-align: left; font-weight: 600; color: var(--muted); font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  th { text-align: left; font-weight: 600; color: var(--muted-foreground); font-size: 13px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
   td { padding: 6px 8px; border-bottom: 1px solid var(--line); }
   tbody tr:last-child td { border-bottom: 0; }
 </style>

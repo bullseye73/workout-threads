@@ -144,16 +144,16 @@
   h3 { margin: 18px 0 4px; font-size: 15px; }
   .row { display: flex; gap: 8px; flex-wrap: wrap; }
   input:not([type=checkbox]) { flex: 1; min-width: 160px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); }
-  .field { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); font-size: 14px; }
+  .field { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted-foreground); font-size: 14px; }
   .check { display: flex; align-items: center; gap: 8px; }
-  .muted { color: var(--muted); font-size: 13px; margin: 2px 0 8px; }
+  .muted { color: var(--muted-foreground); font-size: 13px; margin: 2px 0 8px; }
   .ok { color: #13704c; } .error { color: #b42318; }
   .status { margin: 8px 0 0; font-size: 14px; }
   .choices { display: flex; gap: 8px; margin: 6px 0 4px; }
   .choice { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
   .choice.on { border-color: var(--ride); background: color-mix(in srgb, var(--ride) 8%, white); }
   .choice input { width: auto; min-width: 0; flex: none; }
-  .choice .sub { font-weight: 500; font-size: 12px; color: var(--muted); }
+  .choice .sub { font-weight: 500; font-size: 12px; color: var(--muted-foreground); }
   .status.bad { color: #b42318; }
   .row { margin-top: 8px; }
   .foot { display: flex; justify-content: flex-end; margin-top: 18px; }
