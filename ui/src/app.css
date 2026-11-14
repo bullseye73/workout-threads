@@ -39,6 +39,12 @@
   --destructive: #b42318;
   --on-photo: #ffffff;
   --radius: 10px;
+  /* 낮음 → 높음 (속도·심박을 같은 색 흐름으로) */
+  --heat-0: #3a7bd5;
+  --heat-1: #20a39e;
+  --heat-2: #d9a520;
+  --heat-3: #ec7424;
+  --heat-4: #d6383a;
 
 }
 
@@ -60,6 +66,11 @@
   --hr: #ff6b77;
   --alt: #8b97a4;
   --destructive: #ff7b6b;
+  --heat-0: #6b98ff;
+  --heat-1: #3cc9c2;
+  --heat-2: #f2c94c;
+  --heat-3: #ff9150;
+  --heat-4: #ff6670;
   color-scheme: dark;
 }
 
@@ -93,6 +104,8 @@
   --color-alt: var(--alt);
   --color-destructive: var(--destructive);
   --color-on-photo: var(--on-photo);
+  --color-heat-0: var(--heat-0);
+  --color-heat-4: var(--heat-4);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -115,5 +128,12 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
+
+/* 스크롤바는 스크롤하는 동안만 보인다 (scrollReveal이 data-scrolling을 붙인다). */
+* { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+[data-scrolling] { scrollbar-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; }
+[data-scrolling]::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--muted-foreground) 55%, transparent); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

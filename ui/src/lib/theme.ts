@@ -30,3 +30,8 @@ export function onThemeApplied(cb: () => void): () => void {
   obs.observe(html, { attributes: true, attributeFilter: ['class'] })
   return () => obs.disconnect()
 }
+
+/** 낮음 → 높음 색 흐름 (속도·심박 그래프, 지도 경로, 구간 막대가 같이 쓴다). */
+export function heatStops(): string[] {
+  return [0, 1, 2, 3, 4].map(i => cssVar(`--heat-${i}`))
+}

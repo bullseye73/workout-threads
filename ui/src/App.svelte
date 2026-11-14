@@ -4,6 +4,7 @@
   import { ModeWatcher } from 'mode-watcher'
   import Workbench from './components/workbench/Workbench.svelte'
   import ConfirmHost from '$lib/components/ConfirmHost.svelte'
+  import { installScrollReveal } from '$lib/scrollReveal'
   import { api, isTauri } from './lib/api'
   import type { ImportReport } from './lib/bindings/ImportReport'
 
@@ -49,6 +50,8 @@
     panelTitle = '운동에 안 붙은 사진'
     report = { addedActivities: [], duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: photos }
   }
+
+  $effect(() => installScrollReveal())
 
   // 창에 파일·폴더를 끌어다 놓으면 가져온다 (Tauri 안에서만).
   $effect(() => {

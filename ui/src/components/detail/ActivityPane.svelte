@@ -10,10 +10,10 @@
   import { nearestIndex, toChartSeries } from '$lib/series'
   import { cn } from '$lib/utils'
   import RouteMap from '../RouteMap.svelte'
-  import SplitsTable from '../SplitsTable.svelte'
   import DistanceProfile from './DistanceProfile.svelte'
   import MetricStrip from './MetricStrip.svelte'
-  import PhotoRail from './PhotoRail.svelte'
+  import PhotoStrip from './PhotoStrip.svelte'
+  import SplitsChart from './SplitsChart.svelte'
   import PostTab from './PostTab.svelte'
   import { ask } from '$lib/confirm.svelte'
   import { createPostEditor } from '$lib/postEditor.svelte'
@@ -58,6 +58,12 @@
     highlight = p && series ? nearestIndex(series.x, p.km) : -1
   }
 
+  // 구간 막대에 마우스를 올리면 그 구간 가운데 지점을 지도·그래프에 표시한다.
+  function focusKm(km: number | null) {
+    activePin = null
+    highlight = km === null || !series ? -1 : nearestIndex(series.x, km)
+  }
+
   async function copyPost() {
     try {
       // 게시 탭에서 고친 글이 있으면 화면 글을, 아니면 저장된 글을 복사한다.
@@ -89,14 +95,17 @@
     </header>
     {#if note}<p class="-mt-2 mb-3 text-sm text-done" role="status">{note}</p>{/if}
 
-    <Tabs.Content value="record" class="grid gap-3.5">
+    <!-- 넓으면 지도·사진 | 그래프 두 열로 한 화면에, 좁으면 위아래로. -->
+    <Tabs.Content value="record" class="@container grid gap-3">
       <MetricStrip m={detail.metrics} />
-      <div class={cn('grid gap-3.5', pins.length && 'grid-cols-[minmax(0,1fr)_210px] max-md:grid-cols-1')}>
-        <RouteMap {detail} {highlight} activePhoto={activePin} />
-        <PhotoRail {pins} active={activePin} onFocusPin={focusPin} />
+      <div class="grid items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+        <div class="grid min-w-0 gap-2">
+          <RouteMap {detail} {highlight} activePhoto={activePin} class="h-[260px]" />
+          <PhotoStrip {pins} active={activePin} onFocusPin={focusPin} />
+        </div>
+        <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
       </div>
-      <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
-      <div class="max-w-xl"><SplitsTable splits={detail.splits} totalKm={detail.metrics.distanceKm} sport={detail.sport} /></div>
+      <SplitsChart splits={detail.splits} totalKm={detail.metrics.distanceKm} sport={detail.sport} onFocusKm={focusKm} />
     </Tabs.Content>
 
     <Tabs.Content value="post">
