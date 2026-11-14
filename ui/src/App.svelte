@@ -1,19 +1,14 @@
 <script lang="ts">
-  import ActivityDetail from './components/ActivityDetail.svelte'
-  import Dashboard from './components/Dashboard.svelte'
   import ImportPanel from './components/ImportPanel.svelte'
-  import PostPanel from './components/PostPanel.svelte'
   import Settings from './components/Settings.svelte'
   import { ModeWatcher } from 'mode-watcher'
-  import ThemeToggle from '$lib/components/ThemeToggle.svelte'
+  import Workbench from './components/workbench/Workbench.svelte'
   import { api, isTauri } from './lib/api'
   import type { ImportReport } from './lib/bindings/ImportReport'
 
-  type Screen = { name: 'dashboard' } | { name: 'activity'; id: string } | { name: 'post'; id: string }
   const now = new Date()
   let year = $state(now.getFullYear())
   let month = $state(now.getMonth() + 1)
-  let screen = $state<Screen>({ name: 'dashboard' })
   let reloadKey = $state(0)
   let report = $state<ImportReport | null>(null)
   let importing = $state(false)
@@ -67,28 +62,21 @@
 
 <ModeWatcher />
 <main>
-  <div class="flex justify-end mb-2"><ThemeToggle /></div>
-  {#if importing}<p class="notice" role="status">가져오는 중… 사진이 많으면 카드를 만드는 데 시간이 걸려요.</p>{/if}
-  {#if enriching}<p class="notice" role="status">{enriching}</p>{/if}
-  {#if importError}<p class="notice error" role="alert">{importError}</p>{/if}
-  {#if screen.name === 'dashboard'}
-    <Dashboard {year} {month} {reloadKey} onMonth={(y, m) => { year = y; month = m }}
-      onOpen={id => (screen = { name: 'activity', id })} onImport={async kind => runImport(await api.pickImport(kind))}
-      onUnmatched={showUnmatched} onSettings={() => (showSettings = true)} />
-  {:else if screen.name === 'activity'}
-    <ActivityDetail id={screen.id} onBack={() => (screen = { name: 'dashboard' })}
-      onPost={id => (screen = { name: 'post', id })} />
-  {:else}
-    {@const id = screen.id}
-    <PostPanel {id} onBack={() => { screen = { name: 'activity', id }; reloadKey++ }} />
+  {#if importing || enriching || importError}
+    <div class="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-1 p-3">
+      {#if importing}<p class="notice" role="status">가져오는 중… 사진이 많으면 카드를 만드는 데 시간이 걸려요.</p>{/if}
+      {#if enriching}<p class="notice" role="status">{enriching}</p>{/if}
+      {#if importError}<p class="notice error" role="alert">{importError}</p>{/if}
+    </div>
   {/if}
+  <Workbench {year} {month} {reloadKey} onMonth={(y, m) => { year = y; month = m }}
+    onImport={async kind => runImport(await api.pickImport(kind))}
+    onUnmatched={showUnmatched} onSettings={() => (showSettings = true)} />
   {#if showSettings}<Settings onClose={() => { showSettings = false; reloadKey++ }} />{/if}
   {#if report}<ImportPanel {report} title={panelTitle} onClose={() => { report = null; reloadKey++ }} />{/if}
 </main>
 
 <style>
-  main { max-width: 1120px; margin: 0 auto; padding: 28px 24px 48px; }
-  .notice { background: var(--surface); border-left: 3px solid var(--ride); padding: 8px 12px; border-radius: 6px; }
-  .notice.error { border-color: #b42318; color: #b42318; }
-  @media (max-width: 600px) { main { padding: 16px; } }
+  .notice { margin: 0; background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--ride); padding: 8px 12px; border-radius: 8px; box-shadow: 0 4px 16px -8px color-mix(in srgb, var(--foreground) 40%, transparent); }
+  .notice.error { border-left-color: var(--destructive); color: var(--destructive); }
 </style>
