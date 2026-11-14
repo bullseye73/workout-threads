@@ -21,8 +21,8 @@ pub fn copy_as(src: &str, dir: &std::path::Path, name: &str) -> PathBuf {
     dest
 }
 
-/// 시간대 태그 없이 DateTimeOriginal만 있는 최소 JPEG (EXIF만 읽을 수 있음).
-pub fn jpeg_with_local_time(path: &std::path::Path, local: &str) {
+/// DateTimeOriginal만 있는 EXIF APP1 구간 (FF E1 + 길이 + 내용).
+fn exif_app1(local: &str) -> Vec<u8> {
     let mut tiff = Vec::new();
     tiff.extend_from_slice(b"II*\0");
     tiff.extend_from_slice(&8u32.to_le_bytes());
@@ -44,11 +44,40 @@ pub fn jpeg_with_local_time(path: &std::path::Path, local: &str) {
     tiff.push(0);
     let mut app1 = b"Exif\0\0".to_vec();
     app1.extend_from_slice(&tiff);
-    let mut out = vec![0xFF, 0xD8, 0xFF, 0xE1];
+    let mut out = vec![0xFF, 0xE1];
     out.extend_from_slice(&((app1.len() + 2) as u16).to_be_bytes());
     out.extend_from_slice(&app1);
+    out
+}
+
+/// 시간대 태그 없이 DateTimeOriginal만 있는 최소 JPEG (EXIF만 읽을 수 있음).
+pub fn jpeg_with_local_time(path: &std::path::Path, local: &str) {
+    let mut out = vec![0xFF, 0xD8];
+    out.extend_from_slice(&exif_app1(local));
     out.extend_from_slice(&[0xFF, 0xD9]);
     std::fs::write(path, out).unwrap();
+}
+
+/// 샘플 사진(카드를 만들 수 있는 실제 이미지)의 EXIF를 원하는 촬영 시각 하나로 바꿔 저장한다.
+pub fn real_jpeg_with_local_time(src: &str, dest: &std::path::Path, local: &str) {
+    let b = std::fs::read(sample_path(src)).unwrap();
+    let mut out = vec![0xFF, 0xD8];
+    out.extend_from_slice(&exif_app1(local));
+    let mut i = 2;
+    while i + 4 <= b.len() && b[i] == 0xFF && b[i + 1] != 0xDA {
+        let len = u16::from_be_bytes([b[i + 2], b[i + 3]]) as usize;
+        let seg = &b[i..i + 2 + len];
+        let is_exif = b[i + 1] == 0xE1 && seg.get(4..10) == Some(b"Exif\0\0".as_slice());
+        if !is_exif {
+            out.extend_from_slice(seg);
+        }
+        i += 2 + len;
+    }
+    out.extend_from_slice(&b[i..]);
+    if let Some(d) = dest.parent() {
+        std::fs::create_dir_all(d).unwrap();
+    }
+    std::fs::write(dest, out).unwrap();
 }
 
 use std::sync::Arc;

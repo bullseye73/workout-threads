@@ -48,7 +48,7 @@
   async function showUnmatched() {
     const photos = await api.unmatchedPhotos()
     panelTitle = '운동에 안 붙은 사진'
-    report = { addedActivities: [], duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: photos }
+    report = { addedActivities: [], duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: photos, skipped: [] }
   }
 
   $effect(() => installScrollReveal())

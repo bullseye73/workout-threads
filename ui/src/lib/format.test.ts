@@ -14,7 +14,7 @@ describe('post helpers', () => {
     expect(parseHashtags('#라이딩,#한강')).toEqual(['#라이딩', '#한강'])
   })
   it('importSummary', () => {
-    expect(importSummary({ addedActivities: ['a'], duplicateFiles: ['x', 'y', 'z'], failed: [], cardsCreated: 2, unmatchedPhotos: [] }))
+    expect(importSummary({ addedActivities: ['a'], duplicateFiles: ['x', 'y', 'z'], failed: [], cardsCreated: 2, unmatchedPhotos: [], skipped: [] }))
       .toBe('운동 1개 추가 · 카드 2장 · 이미 있음 3 · 실패 0')
   })
 })

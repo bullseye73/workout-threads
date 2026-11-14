@@ -136,7 +136,7 @@ const delay = <T>(v: T) => new Promise<T>(r => setTimeout(() => r(v), 50))
 
 export const mockApi: Api = {
   importPaths: async paths => delay({ addedActivities: paths.length ? ['m3'] : [], duplicateFiles: [], failed: [],
-    cardsCreated: paths.length ? 2 : 0, unmatchedPhotos: [] }),
+    cardsCreated: paths.length ? 2 : 0, unmatchedPhotos: [], skipped: [] }),
   monthView: async (y, m) => delay(mockMonth(y, m)),
   activityDetail: async id => delay(mockDetail(id)),
   postView: async id => delay(mockPost(id)),

@@ -2,4 +2,8 @@
 import type { ImportIssue } from "./ImportIssue";
 import type { PhotoDto } from "./PhotoDto";
 
-export type ImportReport = { addedActivities: Array<string>, duplicateFiles: Array<string>, failed: Array<ImportIssue>, cardsCreated: number, unmatchedPhotos: Array<PhotoDto>, };
+export type ImportReport = { addedActivities: Array<string>, duplicateFiles: Array<string>, failed: Array<ImportIssue>, cardsCreated: number, unmatchedPhotos: Array<PhotoDto>, 
+/**
+ * 날짜를 골라 가져올 때, 날짜가 달라(또는 촬영 날짜가 없어) 넣지 않은 파일.
+ */
+skipped: Array<ImportIssue>, };

@@ -36,6 +36,8 @@ pub struct ImportReport {
     pub failed: Vec<ImportIssue>,
     pub cards_created: u32,
     pub unmatched_photos: Vec<PhotoDto>,
+    /// 날짜를 골라 가져올 때, 날짜가 달라(또는 촬영 날짜가 없어) 넣지 않은 파일.
+    pub skipped: Vec<ImportIssue>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, TS, PartialEq, Eq)]

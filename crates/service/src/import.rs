@@ -61,6 +61,12 @@ fn expand(paths: &[std::path::PathBuf]) -> (Vec<std::path::PathBuf>, Vec<std::pa
     (fits, photos)
 }
 
+/// "10월 11일" (사유 문구용).
+fn md(d: NaiveDate) -> String {
+    use workout_core::chrono::Datelike;
+    format!("{}월 {}일", d.month(), d.day())
+}
+
 pub(crate) fn day_dir(d: NaiveDate) -> String {
     format!("files/{}", d.format("%Y%m%d"))
 }
@@ -83,10 +89,127 @@ impl Library {
     pub fn import_paths(&mut self, paths: &[std::path::PathBuf]) -> Result<ImportReport> {
         let (fits, photos) = expand(paths);
         let mut report = ImportReport::default();
+        self.import_files(&fits, &photos, &mut report)?;
+        Ok(report)
+    }
+
+    /// 고른 날짜의 FIT(시작일 기준)와 그 날짜에 찍은 사진만 넣는다. 나머지는 사유와 함께 `skipped`.
+    /// 끝난 뒤 그날 운동이 하나뿐이면, 시간이 안 맞아 남은 그날 사진을 그 운동에 붙인다.
+    pub fn import_for_date(
+        &mut self,
+        date: NaiveDate,
+        paths: &[std::path::PathBuf],
+    ) -> Result<ImportReport> {
+        let (fits, photos) = expand(paths);
+        let mut report = ImportReport::default();
+        let mut keep_fits = Vec::new();
+        let mut offset = None;
+        for fit in fits {
+            // 읽지 못하는 FIT는 그대로 보내 기존 흐름이 실패로 보고하게 한다.
+            match std::fs::read(&fit).ok().and_then(|b| parse_fit(&b).ok()) {
+                Some(a) if a.header.start_local().date() != date => {
+                    report.skipped.push(ImportIssue {
+                        file: file_name(&fit),
+                        reason: format!("{} 기록이에요", md(a.header.start_local().date())),
+                    })
+                }
+                Some(a) => {
+                    offset.get_or_insert(a.header.utc_offset_s);
+                    keep_fits.push(fit);
+                }
+                None => keep_fits.push(fit),
+            }
+        }
+        let day_acts = self.activities_on(date)?;
+        let offset = offset
+            .or_else(|| day_acts.first().map(|r| r.header.utc_offset_s))
+            .unwrap_or_else(|| local_offset_at(Utc::now()));
+        let mut keep_photos = Vec::new();
+        for photo in photos {
+            match read_photo_meta(&photo, offset)
+                .ok()
+                .and_then(|m| m.taken_at)
+            {
+                None => report.skipped.push(ImportIssue {
+                    file: file_name(&photo),
+                    reason: "촬영 날짜가 없어요".into(),
+                }),
+                Some(t) if local_date(t, offset) != date => report.skipped.push(ImportIssue {
+                    file: file_name(&photo),
+                    reason: format!("{}에 찍었어요", md(local_date(t, offset))),
+                }),
+                Some(_) => keep_photos.push(photo),
+            }
+        }
+        self.import_files(&keep_fits, &keep_photos, &mut report)?;
+        self.attach_day_photos(date, offset, &mut report)?;
+        Ok(report)
+    }
+
+    /// 그날 운동이 정확히 하나면, 이번에 안 붙은 그날 사진을 그 운동에 붙인다 (km 지점은 모름).
+    fn attach_day_photos(
+        &mut self,
+        date: NaiveDate,
+        offset: i32,
+        report: &mut ImportReport,
+    ) -> Result<()> {
+        let day_acts = self.activities_on(date)?;
+        let [only] = day_acts.as_slice() else {
+            return Ok(());
+        };
+        let a = self.load_activity(&only.header.id)?;
+        let mut attached = false;
+        let mut left = Vec::new();
+        for dto in std::mem::take(&mut report.unmatched_photos) {
+            let same_day = self
+                .store
+                .photo(dto.id)?
+                .filter(|p| p.taken_at.is_some_and(|t| local_date(t, offset) == date));
+            match same_day {
+                Some(row) => match self.attach_photo(row, &a, None) {
+                    Ok(_) => {
+                        report.cards_created += 1;
+                        attached = true;
+                    }
+                    Err(e) => {
+                        report.failed.push(ImportIssue {
+                            file: dto.file_name.clone(),
+                            reason: e.to_string(),
+                        });
+                        left.push(dto);
+                    }
+                },
+                None => left.push(dto),
+            }
+        }
+        report.unmatched_photos = left;
+        if attached {
+            self.write_template_post(&a.header.id)?;
+        }
+        Ok(())
+    }
+
+    fn activities_on(&self, date: NaiveDate) -> Result<Vec<ActivityRow>> {
+        use workout_core::chrono::Datelike;
+        Ok(self
+            .store
+            .activities_in_month(date.year(), date.month())?
+            .into_iter()
+            .filter(|r| r.header.start_local().date() == date)
+            .collect())
+    }
+
+    /// 가져오기 본체: FIT → 남아 있던 사진 다시 맞추기 → 사진 → 글.
+    fn import_files(
+        &mut self,
+        fits: &[std::path::PathBuf],
+        photos: &[std::path::PathBuf],
+        report: &mut ImportReport,
+    ) -> Result<()> {
         let mut cache: Cache = HashMap::new();
         let mut touched: BTreeSet<String> = BTreeSet::new();
         let mut batch: Vec<String> = Vec::new();
-        for fit in &fits {
+        for fit in fits {
             match self.import_fit(fit) {
                 Ok(Some(a)) => {
                     report.added_activities.push(a.header.id.clone());
@@ -107,16 +230,16 @@ impl Library {
             .filter_map(|id| cache.get(id).cloned())
             .collect();
         if !new_acts.is_empty() {
-            self.rematch_unmatched(&new_acts, &mut report, &mut touched)?;
+            self.rematch_unmatched(&new_acts, report, &mut touched)?;
         }
         let batch_offset = new_acts.first().map(|a| a.header.utc_offset_s);
-        for photo in &photos {
+        for photo in photos {
             if let Err(e) = self.import_photo(
                 photo,
                 &new_acts,
                 batch_offset,
                 &mut cache,
-                &mut report,
+                report,
                 &mut touched,
             ) {
                 report.failed.push(ImportIssue {
@@ -133,7 +256,7 @@ impl Library {
                 });
             }
         }
-        Ok(report)
+        Ok(())
     }
 
     /// 새 운동이면 복사·저장 후 돌려주고, 이미 있으면 None.
