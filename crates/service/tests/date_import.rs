@@ -108,3 +108,24 @@ fn already_imported_photo_counts_as_duplicate() {
     assert_eq!(r.duplicate_files.len(), 3);
     assert!(r.skipped.is_empty());
 }
+
+#[test]
+fn failure_after_import_still_returns_the_report() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    lib.import_for_date(day(10, 25), &[sample_path(FIT_1025)])
+        .unwrap();
+    // 라이브러리의 FIT를 지워, 사진을 붙이려고 운동을 다시 읽을 때 실패하게 만든다.
+    let fit_dir = lib.root().join("files/20261025");
+    for e in std::fs::read_dir(&fit_dir).unwrap() {
+        let p = e.unwrap().path();
+        if p.extension().is_some_and(|x| x == "fit") {
+            std::fs::remove_file(p).unwrap();
+        }
+    }
+    let late = t.path().join("in/late.jpeg");
+    real_jpeg_with_local_time(P_0723, &late, "2026:10:25 20:00:00");
+    let r = lib.import_for_date(day(10, 25), &[late]);
+    let r = r.expect("이미 들어간 파일이 있으니 보고서를 돌려줘야 한다");
+    assert!(!r.failed.is_empty());
+}

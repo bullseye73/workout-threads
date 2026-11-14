@@ -89,7 +89,7 @@ impl Library {
     pub fn import_paths(&mut self, paths: &[std::path::PathBuf]) -> Result<ImportReport> {
         let (fits, photos) = expand(paths);
         let mut report = ImportReport::default();
-        self.import_files(&fits, &photos, &mut report)?;
+        self.import_files(&fits, &photos, None, &mut report)?;
         Ok(report)
     }
 
@@ -141,8 +141,15 @@ impl Library {
                 Some(_) => keep_photos.push(photo),
             }
         }
-        self.import_files(&keep_fits, &keep_photos, &mut report)?;
-        self.attach_day_photos(date, offset, &mut report)?;
+        // 날짜 검사와 같은 기준 시간대로 사진 시각을 저장한다 (FIT가 중복이어도).
+        self.import_files(&keep_fits, &keep_photos, Some(offset), &mut report)?;
+        // 파일은 이미 들어갔으니, 붙이기에서 생긴 문제는 보고서에 담고 보고서를 돌려준다.
+        if let Err(e) = self.attach_day_photos(date, offset, &mut report) {
+            report.failed.push(ImportIssue {
+                file: md(date),
+                reason: format!("그날 운동에 사진을 붙이지 못했어요: {e}"),
+            });
+        }
         Ok(report)
     }
 
@@ -204,6 +211,7 @@ impl Library {
         &mut self,
         fits: &[std::path::PathBuf],
         photos: &[std::path::PathBuf],
+        offset_hint: Option<i32>,
         report: &mut ImportReport,
     ) -> Result<()> {
         let mut cache: Cache = HashMap::new();
@@ -232,7 +240,10 @@ impl Library {
         if !new_acts.is_empty() {
             self.rematch_unmatched(&new_acts, report, &mut touched)?;
         }
-        let batch_offset = new_acts.first().map(|a| a.header.utc_offset_s);
+        let batch_offset = new_acts
+            .first()
+            .map(|a| a.header.utc_offset_s)
+            .or(offset_hint);
         for photo in photos {
             if let Err(e) = self.import_photo(
                 photo,
