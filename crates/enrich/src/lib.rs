@@ -27,11 +27,11 @@ pub enum EnrichError {
     Status(u16, String),
     #[error("응답을 해석하지 못했어요: {0}")]
     Parse(String),
-    #[error("Claude가 요청을 거절했어요{}", .0.as_ref().map(|c| format!(" ({c})")).unwrap_or_default())]
+    #[error("AI가 요청을 거절했어요{}", .0.as_ref().map(|c| format!(" ({c})")).unwrap_or_default())]
     Refused(Option<String>),
     #[error("응답이 잘렸어요. 다시 시도해 주세요")]
     Truncated,
-    #[error("설정에서 Claude API 키를 넣어 주세요")]
+    #[error("설정에서 AI API 키를 넣어 주세요")]
     NoKey,
 }
 
@@ -161,7 +161,9 @@ impl Http for ReqwestHttp {
                 .map_err(|e| EnrichError::Network(e.to_string()))?;
             // 키·토큰이 디버그 출력·로그에 나오지 않게.
             value.set_sensitive(
-                k.eq_ignore_ascii_case("x-api-key") || k.eq_ignore_ascii_case("authorization"),
+                k.eq_ignore_ascii_case("x-api-key")
+                    || k.eq_ignore_ascii_case("x-goog-api-key")
+                    || k.eq_ignore_ascii_case("authorization"),
             );
             b = b.header(k.as_str(), value);
         }

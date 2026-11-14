@@ -156,13 +156,7 @@ pub fn output_schema() -> Value {
 
 /// AI가 준 JSON 글을 읽는다. 코드 펜스(```json)를 벗기고, 해시태그를 정리하고, 빈 본문은 거절한다.
 pub fn parse_output_json(text: &str) -> Result<PostText, EnrichError> {
-    let t = text.trim();
-    let t = t
-        .strip_prefix("```json")
-        .or_else(|| t.strip_prefix("```"))
-        .map(|r| r.trim_end().trim_end_matches("```").trim())
-        .unwrap_or(t);
-    let out: Value = serde_json::from_str(t).map_err(|e| EnrichError::Parse(e.to_string()))?;
+    let out = extract_json(text).ok_or_else(|| EnrichError::Parse("JSON이 아닌 응답".into()))?;
     let body = out["body"]
         .as_str()
         .ok_or_else(|| EnrichError::Parse("본문 없음".into()))?
@@ -189,4 +183,17 @@ pub fn parse_output_json(text: &str) -> Result<PostText, EnrichError> {
         }
     }
     Ok(PostText { body, hashtags })
+}
+
+/// 코드 펜스(```json, ```JSON)나 앞뒤 설명이 붙어 와도 JSON 객체를 꺼낸다.
+fn extract_json(text: &str) -> Option<Value> {
+    let t = text.trim();
+    if let Ok(v) = serde_json::from_str::<Value>(t) {
+        return v.is_object().then_some(v);
+    }
+    let (start, end) = (t.find('{')?, t.rfind('}')?);
+    (start < end)
+        .then(|| serde_json::from_str::<Value>(&t[start..=end]).ok())
+        .flatten()
+        .filter(|v| v.is_object())
 }

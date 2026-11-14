@@ -52,7 +52,8 @@ fn missing_key_for_chosen_provider_sends_nothing() {
     workout_testkit::require_samples!();
     let (_t, mut lib, http) = temp_library_with_mock();
     let id = import_1025(&mut lib);
-    lib.set_refine_key("claude", Some("c".into())).unwrap(); // Gemini가 기본인데 Claude 키만 있음
+    lib.set_refine_key("claude", Some("c".into())).unwrap();
+    lib.set_refine_provider("gemini").unwrap(); // Gemini를 골랐는데 Claude 키만 있음
     let e = lib.refine_post(&id, false).unwrap_err().to_string();
     assert!(e.contains("Gemini") && e.contains("API 키"), "{e}");
     assert_eq!(http.calls().len(), 0);
@@ -79,5 +80,20 @@ fn unknown_provider_is_rejected() {
     let (_t, mut lib, _h) = temp_library_with_mock();
     assert!(lib.set_refine_provider("gpt").is_err());
     assert!(lib.set_refine_key("gpt", Some("x".into())).is_err());
+    assert_eq!(lib.refine_status().unwrap().provider, "gemini");
+}
+
+/// 리뷰 I3: 예전 버전에서 Claude 키만 넣어 둔 사용자는 업그레이드 뒤에도 Claude로 다듬는다.
+#[test]
+fn legacy_claude_user_keeps_claude() {
+    let (_t, mut lib, _h) = temp_library_with_mock();
+    lib.secrets_for_tests()
+        .set(CLAUDE_KEY, Some("old-claude-key"))
+        .unwrap();
+    let s = lib.refine_status().unwrap();
+    assert_eq!(s.provider, "claude");
+    assert!(s.has_key);
+    // Gemini 키도 있으면 기본(Gemini)
+    lib.set_refine_key("gemini", Some("g".into())).unwrap();
     assert_eq!(lib.refine_status().unwrap().provider, "gemini");
 }

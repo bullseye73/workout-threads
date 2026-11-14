@@ -352,12 +352,22 @@ impl Library {
         Provider::parse(id).ok_or_else(|| ServiceError::Failed(format!("알 수 없는 AI: {id}")))
     }
 
+    /// 고른 AI. 아직 고른 적이 없으면 Gemini가 기본이지만,
+    /// 예전 버전에서 Claude 키만 넣어 둔 사용자는 Claude를 그대로 쓴다.
     fn refine_provider(&self) -> Result<Provider> {
-        Ok(self
+        if let Some(p) = self
             .store
             .setting(PROVIDER_KEY)?
             .and_then(|p| Provider::parse(&p))
-            .unwrap_or(Provider::Gemini))
+        {
+            return Ok(p);
+        }
+        let has = |p: Provider| self.secrets.get(p.key_name()).is_some();
+        Ok(if has(Provider::Claude) && !has(Provider::Gemini) {
+            Provider::Claude
+        } else {
+            Provider::Gemini
+        })
     }
 
     fn refine_model(&self, p: Provider) -> Result<String> {

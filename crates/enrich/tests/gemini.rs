@@ -134,3 +134,85 @@ fn refine_with_routes_by_provider() {
     assert_eq!(Provider::Claude.key_name(), "anthropic_api_key");
     assert_eq!(Provider::Gemini.key_name(), "gemini_api_key");
 }
+
+// ---- 리뷰 수정 ----
+
+#[test]
+fn messages_do_not_name_claude() {
+    let refused = EnrichError::Refused(Some("SAFETY".into())).to_string();
+    assert!(
+        !refused.contains("Claude") && refused.contains("AI"),
+        "{refused}"
+    );
+    assert!(!EnrichError::NoKey.to_string().contains("Claude"));
+}
+
+fn status_msg(status: u16, fixture_name: &str) -> String {
+    let http = MockHttp::new(vec![HttpResponse {
+        status,
+        body: fixture(fixture_name),
+    }]);
+    match refine(&http, "k", DEFAULT_MODEL, &input_with_route(vec![])).unwrap_err() {
+        EnrichError::Status(_, m) => m,
+        e => panic!("{e:?}"),
+    }
+}
+
+#[test]
+fn friendly_error_messages() {
+    assert!(status_msg(400, "gemini_bad_key.json").contains("API 키"));
+    assert!(status_msg(404, "gemini_not_found.json").contains("모델 이름"));
+    assert!(status_msg(429, "gemini_quota.json").contains("사용 한도"));
+    let other = status_msg(500, "gemini_internal.json");
+    assert_eq!(other, "Internal error encountered.");
+}
+
+#[test]
+fn room_for_thinking_tokens() {
+    let req = build_request(&input_with_route(vec![]));
+    assert!(req["generationConfig"]["maxOutputTokens"].as_u64().unwrap() >= 16000);
+}
+
+#[test]
+fn other_finish_reasons_are_refusals() {
+    assert!(
+        matches!(parse_response(&fixture("gemini_image_safety.json")), Err(EnrichError::Refused(Some(c))) if c == "IMAGE_SAFETY")
+    );
+    let other = r#"{"candidates":[{"finishReason":"OTHER","content":{"parts":[]}}]}"#.as_bytes();
+    assert!(matches!(parse_response(other), Err(EnrichError::Refused(Some(c))) if c == "OTHER"));
+}
+
+#[test]
+fn tolerant_json_extraction() {
+    use workout_enrich::refine::parse_output_json;
+    assert_eq!(
+        parse_output_json("```JSON\n{\"body\":\"a\",\"hashtags\":[]}\n```")
+            .unwrap()
+            .body,
+        "a"
+    );
+    assert_eq!(
+        parse_output_json("다듬은 결과예요: {\"body\":\"b\",\"hashtags\":[\"x\"]} 끝")
+            .unwrap()
+            .body,
+        "b"
+    );
+}
+
+#[test]
+fn model_names_are_normalized() {
+    assert_eq!(
+        endpoint("models/gemini-3.8-flash"),
+        endpoint("gemini-3.8-flash")
+    );
+    let http = MockHttp::new(vec![]);
+    let e = refine(&http, "k", "gemini/../x?y", &input_with_route(vec![])).unwrap_err();
+    assert!(e.to_string().contains("모델 이름"), "{e}");
+    assert_eq!(http.calls().len(), 0);
+}
+
+#[test]
+fn thought_parts_are_skipped() {
+    let body = r#"{"candidates":[{"content":{"parts":[{"text":"생각 중...","thought":true},{"text":"{\"body\":\"본문\",\"hashtags\":[]}"}]},"finishReason":"STOP"}]}"#.as_bytes();
+    assert_eq!(parse_response(body).unwrap().body, "본문");
+}
