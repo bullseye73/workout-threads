@@ -49,3 +49,11 @@ describe('mockApi refine provider', () => {
     expect(s.providers.find(p => p.id === 'gemini')?.hasKey).toBe(false)
   })
 })
+
+describe('mockApi.importForDate', () => {
+  it('returns a report that lists skipped files', async () => {
+    const r = await mockApi.importForDate('2026-11-14', ['a.fit'])
+    expect(Array.isArray(r.skipped)).toBe(true)
+    expect(r.skipped.length).toBeGreaterThan(0)
+  })
+})

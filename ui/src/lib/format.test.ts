@@ -17,4 +17,10 @@ describe('post helpers', () => {
     expect(importSummary({ addedActivities: ['a'], duplicateFiles: ['x', 'y', 'z'], failed: [], cardsCreated: 2, unmatchedPhotos: [], skipped: [] }))
       .toBe('운동 1개 추가 · 카드 2장 · 이미 있음 3 · 실패 0')
   })
+  it('importSummary counts files from another date only when there are some', () => {
+    const base = { addedActivities: [], duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: [] }
+    const two = [{ file: 'a.jpg', reason: '10월 11일에 찍었어요' }, { file: 'b.fit', reason: '10월 11일 기록이에요' }]
+    expect(importSummary({ ...base, skipped: two })).toBe('운동 0개 추가 · 카드 0장 · 이미 있음 0 · 실패 0 · 다른 날짜 2')
+    expect(importSummary({ ...base, skipped: [] })).toBe('운동 0개 추가 · 카드 0장 · 이미 있음 0 · 실패 0')
+  })
 })

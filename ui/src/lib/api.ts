@@ -14,6 +14,7 @@ import { mockDetail, mockGoal, mockMonth, mockPost, mockPosts } from './mock'
 
 export interface Api {
   importPaths(paths: string[]): Promise<ImportReport>
+  importForDate(date: string, paths: string[]): Promise<ImportReport>
   monthView(year: number, month: number): Promise<MonthView>
   activityDetail(id: string): Promise<ActivityDetail>
   postView(id: string): Promise<PostView>
@@ -65,6 +66,7 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 
 export const tauriApi: Api = {
   importPaths: paths => invoke('import_paths', { paths }),
+  importForDate: (date, paths) => invoke('import_for_date', { date, paths }),
   monthView: (year, month) => invoke('month_view', { year, month }),
   activityDetail: id => invoke('activity_detail', { id }),
   postView: activityId => invoke('post_view', { activityId }),
@@ -137,6 +139,8 @@ const delay = <T>(v: T) => new Promise<T>(r => setTimeout(() => r(v), 50))
 export const mockApi: Api = {
   importPaths: async paths => delay({ addedActivities: paths.length ? ['m3'] : [], duplicateFiles: [], failed: [],
     cardsCreated: paths.length ? 2 : 0, unmatchedPhotos: [], skipped: [] }),
+  importForDate: async (_date, paths) => delay({ addedActivities: paths.length ? ['m4'] : [], duplicateFiles: [], failed: [],
+    cardsCreated: paths.length ? 1 : 0, unmatchedPhotos: [], skipped: [{ file: 'IMG_0412.jpeg', reason: '11월 1일에 찍었어요' }] }),
   monthView: async (y, m) => delay(mockMonth(y, m)),
   activityDetail: async id => delay(mockDetail(id)),
   postView: async id => delay(mockPost(id)),

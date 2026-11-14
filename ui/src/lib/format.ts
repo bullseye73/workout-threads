@@ -28,5 +28,6 @@ export function parseHashtags(input: string): string[] {
 
 /** 가져오기 결과 한 줄 요약. */
 export function importSummary(r: ImportReport): string {
-  return `운동 ${r.addedActivities.length}개 추가 · 카드 ${r.cardsCreated}장 · 이미 있음 ${r.duplicateFiles.length} · 실패 ${r.failed.length}`
+  const base = `운동 ${r.addedActivities.length}개 추가 · 카드 ${r.cardsCreated}장 · 이미 있음 ${r.duplicateFiles.length} · 실패 ${r.failed.length}`
+  return r.skipped.length ? `${base} · 다른 날짜 ${r.skipped.length}` : base
 }

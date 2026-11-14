@@ -39,6 +39,10 @@
     <Dialog.Title>{title}</Dialog.Title>
     {#if title === '가져오기 결과'}<Dialog.Description class="font-semibold text-foreground">{importSummary(report)}</Dialog.Description>{/if}
   </Dialog.Header>
+  {#if report.skipped.length}
+    <h3>날짜가 달라 넣지 않은 파일</h3>
+    <ul>{#each report.skipped as f}<li><b>{f.file}</b> {f.reason}</li>{/each}</ul>
+  {/if}
   {#if report.failed.length}
     <h3>가져오지 못한 파일</h3>
     <ul>{#each report.failed as f}<li><b>{f.file}</b> {f.reason}</li>{/each}</ul>

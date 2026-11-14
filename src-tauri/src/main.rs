@@ -40,6 +40,19 @@ async fn import_paths(lib: State<'_, Shared>, paths: Vec<String>) -> Res<ImportR
     run(lib, move |l| l.import_paths(&paths)).await
 }
 
+/// 고른 날짜(YYYY-MM-DD)의 FIT·사진만 가져온다.
+#[tauri::command]
+async fn import_for_date(
+    lib: State<'_, Shared>,
+    date: String,
+    paths: Vec<String>,
+) -> Res<ImportReport> {
+    let date = workout_service::chrono_utc::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
+        .map_err(|_| format!("날짜 형식이 잘못됐어요: {date}"))?;
+    let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
+    run(lib, move |l| l.import_for_date(date, &paths)).await
+}
+
 #[tauri::command]
 async fn month_view(lib: State<'_, Shared>, year: i32, month: u32) -> Res<MonthView> {
     run(lib, move |l| l.month_view(year, month)).await
@@ -309,6 +322,7 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             import_paths,
+            import_for_date,
             month_view,
             activity_detail,
             post_view,
