@@ -1,7 +1,6 @@
 <script lang="ts">
   // 작업대: 상단 줄 + 한 달 사진 띠 + 운동 목록 + 상세 패널을 한 화면에.
-  import ActivityDetail from '../ActivityDetail.svelte'
-  import PostPanel from '../PostPanel.svelte'
+  import ActivityPane from '../detail/ActivityPane.svelte'
   import { api } from '$lib/api'
   import type { BackupStatusDto } from '$lib/bindings/BackupStatusDto'
   import type { MonthView } from '$lib/bindings/MonthView'
@@ -21,7 +20,6 @@
   let backup = $state<BackupStatusDto | null>(null)
   let filter = $state<ListFilter>('all')
   let selected = $state<string | null>(null)
-  let posting = $state(false)
   let paneKey = $state(0)
 
   $effect(() => {
@@ -42,6 +40,7 @@
   const allGroups = $derived(view ? groupByWeek(view.days) : [])
   const groups = $derived(filterGroups(allGroups, filter))
   const ribbon = $derived(view ? ribbonDays(year, month, view.days, todayIso) : [])
+  const selectedItem = $derived(allGroups.flatMap(g => g.items).find(i => i.activityId === selected))
   const readyCount = $derived(allGroups.reduce((t, g) => t + g.items.filter(i => i.postStatus === 'ready').length, 0))
 
   // 달을 바꾸거나 목록이 바뀌면 남아 있는 선택을 지키고, 없으면 가장 최근 운동.
@@ -52,7 +51,6 @@
 
   function select(id: string | null) {
     selected = id
-    posting = false
   }
   function shift(delta: number) {
     const d = new Date(year, month - 1 + delta, 1)
@@ -83,11 +81,7 @@
       <main class="min-w-0 overflow-y-auto p-5 max-sm:p-4">
         {#if selected}
           {#key `${selected}-${paneKey}`}
-            {#if posting}
-              <PostPanel id={selected} onBack={() => { posting = false; void refresh() }} />
-            {:else}
-              <ActivityDetail id={selected} onBack={() => select(null)} onPost={() => (posting = true)} />
-            {/if}
+            <ActivityPane id={selected} status={selectedItem?.postStatus ?? 'none'} onChanged={() => void refresh()} />
           {/key}
         {:else if view}
           <p class="text-muted-foreground">{view.days.length ? '왼쪽에서 운동을 고르세요.' : '이번 달 기록이 없어요.'}</p>
