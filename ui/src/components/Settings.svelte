@@ -1,9 +1,12 @@
 <script lang="ts">
   // 설정: 글 다듬기 AI(Gemini/Claude)와 키(키 값은 다시 보여 주지 않음)·모델, 카드 경로선, 드라이브 백업.
-  import { api } from '../lib/api'
-  import { backupStatusText } from '../lib/backup'
-  import type { BackupStatusDto } from '../lib/bindings/BackupStatusDto'
-  import type { RefineStatusDto } from '../lib/bindings/RefineStatusDto'
+  import { Button } from '$lib/components/ui/button'
+  import * as Dialog from '$lib/components/ui/dialog'
+  import { api } from '$lib/api'
+  import { backupStatusText } from '$lib/backup'
+  import type { BackupStatusDto } from '$lib/bindings/BackupStatusDto'
+  import type { RefineStatusDto } from '$lib/bindings/RefineStatusDto'
+  import { ask } from '$lib/confirm.svelte'
   let { onClose }: { onClose: () => void } = $props()
   let refine = $state<RefineStatusDto | null>(null)
   let model = $state('')
@@ -46,8 +49,8 @@
   const login = () => run('브라우저에서 구글 로그인을 마쳐 주세요…', () => api.googleLogin())
   const logout = () => run('로그아웃 중…', () => api.googleLogout())
   const backupNow = () => run('백업 중…', () => api.backupNow())
-  function restore() {
-    if (confirm('드라이브의 백업으로 이 라이브러리를 채울까요? 비어 있는 라이브러리에서만 할 수 있어요.')) {
+  async function restore() {
+    if (await ask({ title: '드라이브의 백업으로 이 라이브러리를 채울까요?', description: '비어 있는 라이브러리에서만 할 수 있어요.', action: '복원' })) {
       run('복원 중…', () => api.restoreFromDrive())
     }
   }
@@ -75,9 +78,9 @@
   }
 </script>
 
-<div class="backdrop" role="presentation" onclick={onClose}></div>
-<div class="panel" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-  <h2 id="settings-title">설정</h2>
+<Dialog.Root open onOpenChange={o => { if (!o) onClose() }}>
+<Dialog.Content class="max-h-[84vh] overflow-auto sm:max-w-lg">
+  <Dialog.Header><Dialog.Title>설정</Dialog.Title></Dialog.Header>
 
   <section>
     <h3>글 다듬기 AI</h3>
@@ -93,8 +96,8 @@
       <p class="muted">{refine.label} API 키는 이 컴퓨터의 키 보관함에만 저장되고, 저장한 뒤에는 다시 보여 주지 않아요. "사진도 보내기"를 켜면 위치 정보를 지운 작은 사진이 {refine.company} 서버로 가요.</p>
       <div class="row">
         <input type="password" placeholder={refine.hasKey ? '저장된 키 있음' : KEY_HINT[refine.provider]} bind:value={keyInput} aria-label="{refine.label} API 키" autocomplete="off" />
-        <button class="btn primary" onclick={saveKey} disabled={!keyInput.trim()}>키 저장</button>
-        {#if refine.hasKey}<button class="btn" onclick={clearKey}>키 지우기</button>{/if}
+        <Button size="sm" onclick={saveKey} disabled={!keyInput.trim()}>키 저장</Button>
+        {#if refine.hasKey}<Button size="sm" variant="outline" onclick={clearKey}>키 지우기</Button>{/if}
       </div>
       <label class="field">모델
         <input bind:value={model} onchange={saveModel} />
@@ -117,13 +120,13 @@
     <label class="field">클라이언트 ID <input bind:value={clientId} placeholder="….apps.googleusercontent.com" /></label>
     <label class="field">secret <input type="password" bind:value={clientSecret} placeholder={hasSecret ? '저장된 secret 있음' : ''} autocomplete="off" /></label>
     <div class="row">
-      <button class="btn" onclick={saveClient} disabled={!!working}>클라이언트 저장</button>
-      {#if backup?.configured && !backup.signedIn}<button class="btn primary" onclick={login} disabled={!!working}>구글로 로그인</button>{/if}
+      <Button size="sm" variant="outline" onclick={saveClient} disabled={!!working}>클라이언트 저장</Button>
+      {#if backup?.configured && !backup.signedIn}<Button size="sm" onclick={login} disabled={!!working}>구글로 로그인</Button>{/if}
       {#if backup?.signedIn}
-        <button class="btn primary" onclick={backupNow} disabled={!!working}>지금 백업</button>
-        <button class="btn" onclick={logout} disabled={!!working}>로그아웃</button>
+        <Button size="sm" onclick={backupNow} disabled={!!working}>지금 백업</Button>
+        <Button size="sm" variant="outline" onclick={logout} disabled={!!working}>로그아웃</Button>
       {/if}
-      {#if backup?.signedIn && backup.canRestore}<button class="btn" onclick={restore} disabled={!!working}>드라이브에서 복원</button>{/if}
+      {#if backup?.signedIn && backup.canRestore}<Button size="sm" variant="outline" onclick={restore} disabled={!!working}>드라이브에서 복원</Button>{/if}
     </div>
     {#if backup}
       <p class="status" class:bad={!!backup.lastError}>{backupStatusText(backup, new Date())}{#if backup.signedIn && backup.pending > 0} · 올릴 파일 {backup.pending}개{/if}</p>
@@ -133,28 +136,22 @@
 
   {#if message}<p class="ok" role="status">{message}</p>{/if}
   {#if error}<p class="error" role="alert">{error}</p>{/if}
-  <div class="foot"><button class="btn" onclick={onClose}>닫기</button></div>
-</div>
+  <Dialog.Footer><Button variant="outline" onclick={onClose}>닫기</Button></Dialog.Footer>
+</Dialog.Content>
+</Dialog.Root>
 
 <style>
-  .backdrop { position: fixed; inset: 0; background: rgba(27, 36, 48, .35); }
-  .panel { position: fixed; top: 10vh; left: 50%; transform: translateX(-50%); width: min(520px, calc(100vw - 32px)); max-height: 80vh; overflow: auto;
-    background: var(--surface); border-radius: 18px; padding: 24px; box-shadow: 0 20px 60px rgba(27, 36, 48, .25); }
-  h2 { margin: 0 0 8px; font-size: 20px; }
-  h3 { margin: 18px 0 4px; font-size: 15px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; }
-  input:not([type=checkbox]) { flex: 1; min-width: 160px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; background: var(--surface); }
+  h3 { margin: 14px 0 4px; font-size: 15px; font-weight: 700; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  input:not([type=checkbox]):not([type=radio]) { flex: 1; min-width: 160px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; background: var(--card); }
   .field { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted-foreground); font-size: 14px; }
   .check { display: flex; align-items: center; gap: 8px; }
   .muted { color: var(--muted-foreground); font-size: 13px; margin: 2px 0 8px; }
-  .ok { color: #13704c; } .error { color: #b42318; }
+  .ok { color: var(--done); } .error { color: var(--destructive); }
   .status { margin: 8px 0 0; font-size: 14px; }
+  .status.bad { color: var(--destructive); }
   .choices { display: flex; gap: 8px; margin: 6px 0 4px; }
-  .choice { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
-  .choice.on { border-color: var(--ride); background: color-mix(in srgb, var(--ride) 8%, white); }
-  .choice input { width: auto; min-width: 0; flex: none; }
+  .choice { display: flex; align-items: center; gap: 6px; border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px; cursor: pointer; font-weight: 600; }
+  .choice.on { border-color: var(--ride); background: var(--selected); }
   .choice .sub { font-weight: 500; font-size: 12px; color: var(--muted-foreground); }
-  .status.bad { color: #b42318; }
-  .row { margin-top: 8px; }
-  .foot { display: flex; justify-content: flex-end; margin-top: 18px; }
 </style>

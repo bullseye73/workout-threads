@@ -57,7 +57,8 @@
     if (id === selected || (pane && !(await pane.requestLeave()))) return
     select(id)
   }
-  function shift(delta: number) {
+  async function shift(delta: number) {
+    if (pane && !(await pane.requestLeave())) return
     const d = new Date(year, month - 1 + delta, 1)
     onMonth(d.getFullYear(), d.getMonth() + 1)
   }

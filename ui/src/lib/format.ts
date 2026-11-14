@@ -14,12 +14,6 @@ export function duration(sec: number): string {
   return h > 0 ? `${h}시간 ${m % 60}분` : `${m}분`
 }
 
-/** 목표 대비 비율 0..1. 목표가 없거나 0이면 0. */
-export function gaugeRatio(value: number, goal: number | null): number {
-  if (!goal || goal <= 0) return 0
-  return Math.min(1, Math.max(0, value / goal))
-}
-
 /** 입력 문자열 → 해시태그 목록 ("#" 자동 추가, 공백·쉼표 구분, 중복 제거). */
 export function parseHashtags(input: string): string[] {
   const out: string[] = []

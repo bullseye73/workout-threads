@@ -71,7 +71,7 @@
 {#if detail.route.length < 2}
   <div class="grid h-[140px] place-items-center rounded-lg bg-muted p-4 text-center text-muted-foreground">GPS 기록이 없어요. 실내 운동이었거나 위치 기록이 꺼져 있었어요.</div>
 {:else}
-  <div class="map h-[300px] overflow-hidden rounded-lg border bg-muted" bind:this={el}></div>
+  <div class="map isolate h-[300px] overflow-hidden rounded-lg border bg-muted" bind:this={el}></div>
 {/if}
 
 <style>

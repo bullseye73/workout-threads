@@ -1,13 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { km, duration, gaugeRatio } from './format'
+import { km, duration } from './format'
 
 describe('format', () => {
   it('km', () => { expect(km(107.54)).toBe('107.5'); expect(km(0)).toBe('0'); expect(km(5)).toBe('5.0') })
   it('duration', () => { expect(duration(9052)).toBe('2시간 30분'); expect(duration(1650)).toBe('27분'); expect(duration(0)).toBe('0분') })
-  it('gauge without goal', () => {
-    expect(gaugeRatio(50, null)).toBe(0); expect(gaugeRatio(50, 0)).toBe(0)
-    expect(gaugeRatio(450, 300)).toBe(1); expect(gaugeRatio(150, 300)).toBe(0.5)
-  })
 })
 
 import { parseHashtags, importSummary } from './format'

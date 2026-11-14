@@ -40,14 +40,6 @@
   --on-photo: #ffffff;
   --radius: 10px;
 
-  /* 옛 화면용 (Task 6에서 지움) */
-  --paper: var(--background);
-  --surface: var(--card);
-  --ink: var(--foreground);
-  --line: var(--border);
-  --track: var(--sunken);
-  --radius-lg: 18px;
-  --radius-sm: 8px;
 }
 
 /* ── 색 토큰 (어둡게) ── */
@@ -123,11 +115,5 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 }
-
-/* 옛 화면용 버튼 (Task 6에서 지움) */
-.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; }
-.btn:hover { border-color: var(--muted-foreground); }
-.btn.primary { background: var(--ink); color: var(--background); border-color: var(--ink); }
-.btn:disabled { opacity: .5; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
