@@ -2,11 +2,10 @@
   // 2D 경로 지도: 경로 선, 출발·도착 핀, 사진 지점, 그래프와 연동되는 강조 점. 색은 테마 토큰.
   import 'leaflet/dist/leaflet.css'
   import L from 'leaflet'
-  import { mode } from 'mode-watcher'
   import { onDestroy, onMount } from 'svelte'
   import { api } from '$lib/api'
   import type { ActivityDetail } from '$lib/bindings/ActivityDetail'
-  import { cssVar } from '$lib/theme'
+  import { cssVar, onThemeApplied } from '$lib/theme'
 
   let { detail, highlight = -1, activePhoto = null }: { detail: ActivityDetail; highlight?: number; activePhoto?: number | null } = $props()
   let el = $state<HTMLDivElement>()
@@ -52,11 +51,12 @@
     paint()
   })
 
+  // 사진 강조가 바뀌면 다시 칠하고, 테마는 클래스가 실제로 바뀐 뒤에 칠한다.
   $effect(() => {
-    void mode.current
     void activePhoto
     paint()
   })
+  $effect(() => onThemeApplied(paint))
 
   $effect(() => {
     const p = highlight >= 0 ? detail.series.latLon[highlight] : null

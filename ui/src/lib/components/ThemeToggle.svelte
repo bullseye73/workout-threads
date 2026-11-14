@@ -11,8 +11,7 @@
 </script>
 
 <ToggleGroup.Root type="single" variant="outline" size="sm" aria-label="화면 테마"
-  value={userPrefersMode.current}
-  onValueChange={v => { if (v) setMode(v as ThemePref) }}>
+  bind:value={() => userPrefersMode.current, v => { if (v) setMode(v as ThemePref) }}>
   {#each THEME_OPTIONS as o (o.value)}
     {@const Icon = ICON[o.value]}
     <ToggleGroup.Item value={o.value} aria-label={o.label} title={o.label}>

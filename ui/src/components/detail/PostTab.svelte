@@ -11,18 +11,16 @@
   import type { RefineDto } from '$lib/bindings/RefineDto'
   import type { RefineStatusDto } from '$lib/bindings/RefineStatusDto'
   import { ask } from '$lib/confirm.svelte'
-  import { mergeEditor, parseRoutePoints, parseWeather, routeText, weatherText } from '$lib/enrich'
-  import { parseHashtags } from '$lib/format'
+  import { parseRoutePoints, parseWeather, routeText, weatherText } from '$lib/enrich'
+  import type { PostEditor } from '$lib/postEditor.svelte'
   import RefinePreview from '../RefinePreview.svelte'
   import FeedPreview from './FeedPreview.svelte'
 
-  let { id, onDirtyChange, onStatusChange }: {
-    id: string; onDirtyChange: (dirty: boolean) => void; onStatusChange: (s: PostStatus) => void
+  let { id, editor, onStatusChange }: {
+    id: string; editor: PostEditor; onStatusChange: (s: PostStatus) => void
   } = $props()
 
   let post = $state<PostView | null>(null)
-  let body = $state('')
-  let tags = $state('')
   let message = $state('')
   let error = $state('')
   let busy = $state(false)
@@ -35,18 +33,15 @@
   let cacheBust = $state(0)
   $effect(() => { api.refineStatus().then(s => (ai = s)).catch(() => undefined) })
 
-  const hashtags = $derived(parseHashtags(tags))
-  const dirty = $derived(!!post && (body !== post.body || hashtags.join(' ') !== post.hashtags.join(' ')))
-  const fullText = $derived(hashtags.length ? `${body}\n\n${hashtags.join(' ')}` : body)
-  $effect(() => onDirtyChange(dirty))
+  const hashtags = $derived(editor.hashtags)
+  const dirty = $derived(editor.dirty)
+  const fullText = $derived(editor.fullText)
 
   /** force: 사용자가 일부러 글을 바꾼 경우(다시 쓰기·적용)라 화면 글도 서버 값으로 바꾼다. */
   function load(p: PostView, force = false) {
-    const merged = mergeEditor(p, { body, tags }, dirty && !force)
     const statusChanged = post !== null && post.status !== p.status
     post = p
-    body = merged.body
-    tags = merged.tags
+    editor.load(p, force)
     placeInput = p.place?.name ?? ''
     routeInput = routeText(p.routePoints)
     weatherInput = weatherText(p.weather)
@@ -67,14 +62,14 @@
       busy = false
     }
   }
-  const save = () => act('저장했어요', () => api.savePost(id, body, hashtags), true)
+  const save = () => act('저장했어요', () => api.savePost(id, editor.body, hashtags), true)
   const copy = () => act('글을 복사했어요. 스레드에 붙여 넣으면 돼요', () => api.copyText(fullText))
   async function regenerate() {
     if (await ask({ title: '템플릿으로 다시 쓸까요?', description: '직접 고친 내용은 지워져요.', action: '다시 쓰기', destructive: true }))
       act('템플릿으로 다시 썼어요', () => api.regeneratePost(id), true)
   }
   const publish = () => act('게시 완료로 표시했어요', async () => {
-    if (dirty) await api.savePost(id, body, hashtags)
+    if (dirty) await api.savePost(id, editor.body, hashtags)
     return api.markPublished(id)
   })
   // 장소·경로·날씨: 칸을 벗어나면 저장, 비우면 자동 값으로 되돌림.
@@ -86,7 +81,7 @@
     act('날씨를 저장했어요', () => api.setWeather(id, w))
   }
   const enrich = () => act('장소·날씨를 다시 가져왔어요', () => api.enrichActivity(id))
-  const refine = () => act('', async () => { refined = await api.refinePost(id, body, hashtags, includePhotos) })
+  const refine = () => act('', async () => { refined = await api.refinePost(id, editor.body, hashtags, includePhotos) })
   const applyRefined = () => {
     const r = refined!
     refined = null
@@ -110,11 +105,11 @@
           <Label for="body" class="text-xs font-normal text-muted-foreground">본문{#if post.edited} (직접 고침){/if}</Label>
           <span>{fullText.length}자 / 500</span>
         </div>
-        <Textarea id="body" rows={8} bind:value={body} class="bg-card text-[15px] leading-relaxed" />
+        <Textarea id="body" rows={8} bind:value={editor.body} class="bg-card text-[15px] leading-relaxed" />
       </div>
       <div class="grid gap-1">
         <Label for="tags" class="text-xs font-normal text-muted-foreground">해시태그</Label>
-        <Input id="tags" bind:value={tags} placeholder="#라이딩 #한강" class="bg-card text-ride" />
+        <Input id="tags" bind:value={editor.tags} placeholder="#라이딩 #한강" class="bg-card text-ride" />
       </div>
 
       <div class="flex flex-wrap items-center gap-1.5">
@@ -146,7 +141,7 @@
 
     <aside class="grid gap-2.5 lg:sticky lg:top-0">
       <span class="text-xs text-muted-foreground">올라갈 모습</span>
-      <FeedPreview {body} {hashtags} cards={post.cardPaths} {cacheBust} />
+      <FeedPreview body={editor.body} {hashtags} cards={post.cardPaths} {cacheBust} />
       <Button onclick={copy} disabled={busy}>글 복사</Button>
       <Button variant="outline" class="border-done text-done hover:text-done" onclick={publish} disabled={busy || post.status === 'published'}>
         {post.status === 'published' ? '게시함' : '게시 완료로 표시'}

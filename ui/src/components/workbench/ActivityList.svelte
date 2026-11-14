@@ -20,8 +20,7 @@
 </script>
 
 <div class="sticky top-0 z-10 border-b bg-card px-3 py-2">
-  <ToggleGroup.Root type="single" size="sm" variant="outline" aria-label="목록 거르기" value={filter}
-    onValueChange={v => { if (v) onFilter(v as ListFilter) }}>
+  <ToggleGroup.Root type="single" size="sm" variant="outline" aria-label="목록 거르기" bind:value={() => filter, v => { if (v) onFilter(v as ListFilter) }}>
     <ToggleGroup.Item value="all">전체</ToggleGroup.Item>
     <ToggleGroup.Item value="ready">게시 대기 {readyCount}</ToggleGroup.Item>
     <ToggleGroup.Item value="published">게시함</ToggleGroup.Item>

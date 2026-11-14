@@ -1,12 +1,11 @@
 <script lang="ts">
   // 거리 축 그래프 3줄(고도, 심박, 속도/페이스) + 위쪽 사진 핀. 마우스 위치를 상위로 알려 지도와 연동한다.
   import { Chart, Filler, LinearScale, LineController, LineElement, PointElement, type Plugin } from 'chart.js'
-  import { mode } from 'mode-watcher'
   import { onDestroy } from 'svelte'
   import { api } from '$lib/api'
   import type { Pin } from '$lib/profile'
   import { nearestIndex, type ChartSeries } from '$lib/series'
-  import { cssVar } from '$lib/theme'
+  import { cssVar, onThemeApplied } from '$lib/theme'
   import { cn } from '$lib/utils'
 
   Chart.register(LineController, LineElement, PointElement, LinearScale, Filler)
@@ -69,11 +68,11 @@
     })
   }
 
-  // 처음, 그리고 테마가 바뀔 때마다 토큰 색으로 다시 그린다.
+  // 처음 그리고, 테마 클래스가 실제로 바뀐 뒤마다 토큰 색으로 다시 그린다.
   $effect(() => {
-    void mode.current
-    if (canvases.length === rows.length && canvases.every(Boolean)) requestAnimationFrame(build)
+    if (canvases.length === rows.length && canvases.every(Boolean)) build()
   })
+  $effect(() => onThemeApplied(build))
   $effect(() => {
     cursor = highlight
     charts.forEach(c => c.draw())

@@ -15,3 +15,18 @@ export const STATUS_LABEL: Record<PostStatus, string> = { none: '글 없음', re
 export function cssVar(name: string, el: Element = document.documentElement): string {
   return getComputedStyle(el).getPropertyValue(name).trim()
 }
+
+/**
+ * <html>의 dark 클래스가 실제로 바뀐 뒤에 부른다. mode-watcher는 다음 프레임에 클래스를 바꾸므로
+ * 테마 값을 바로 읽으면 이전 색이 나온다. 그래프·지도처럼 색을 직접 칠하는 곳에서 쓴다.
+ */
+export function onThemeApplied(cb: () => void): () => void {
+  const html = document.documentElement
+  let dark = html.classList.contains('dark')
+  const obs = new MutationObserver(() => {
+    const now = html.classList.contains('dark')
+    if (now !== dark) { dark = now; cb() }
+  })
+  obs.observe(html, { attributes: true, attributeFilter: ['class'] })
+  return () => obs.disconnect()
+}

@@ -16,6 +16,7 @@
   import PhotoRail from './PhotoRail.svelte'
   import PostTab from './PostTab.svelte'
   import { ask } from '$lib/confirm.svelte'
+  import { createPostEditor } from '$lib/postEditor.svelte'
 
   let { id, status, onChanged }: { id: string; status: PostStatus; onChanged: () => void } = $props()
 
@@ -25,13 +26,14 @@
   let highlight = $state(-1)
   let activePin = $state<number | null>(null)
   let note = $state('')
-  let postDirty = $state(false)
+  // 게시 탭을 벗어나도 남는 편집 상태 (저장 안 한 수정 확인·글 복사가 화면 글을 본다).
+  const editor = createPostEditor()
 
   /** 게시 탭에 저장 안 한 수정이 있으면 나가기 전에 묻는다. Workbench도 다른 운동을 고르기 전에 부른다. */
   export async function requestLeave(): Promise<boolean> {
-    if (!postDirty) return true
+    if (!editor.dirty) return true
     const ok = await ask({ title: '저장하지 않은 수정 내용이 있어요. 나갈까요?', description: '나가면 고친 글이 사라져요.', action: '나가기', cancel: '계속 고치기', destructive: true })
-    if (ok) postDirty = false
+    if (ok) editor.discard()
     return ok
   }
   async function changeTab(v: string) {
@@ -58,8 +60,8 @@
 
   async function copyPost() {
     try {
-      const post = await api.postView(id)
-      await api.copyText(post.fullText)
+      // 게시 탭에서 고친 글이 있으면 화면 글을, 아니면 저장된 글을 복사한다.
+      await api.copyText(editor.loaded ? editor.fullText : (await api.postView(id)).fullText)
       note = '글을 복사했어요. 스레드에 붙여 넣으면 돼요'
     } catch (e) {
       note = `복사하지 못했어요: ${e}`
@@ -98,7 +100,7 @@
     </Tabs.Content>
 
     <Tabs.Content value="post">
-      <PostTab {id} onDirtyChange={d => (postDirty = d)} onStatusChange={() => onChanged()} />
+      <PostTab {id} {editor} onStatusChange={() => onChanged()} />
     </Tabs.Content>
   </Tabs.Root>
 {:else}
