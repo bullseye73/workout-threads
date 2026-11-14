@@ -95,16 +95,14 @@
     </header>
     {#if note}<p class="-mt-2 mb-3 text-sm text-done" role="status">{note}</p>{/if}
 
-    <!-- 넓으면 지도·사진 | 그래프 두 열로 한 화면에, 좁으면 위아래로. -->
-    <Tabs.Content value="record" class="@container grid gap-3">
+    <!-- 위에서부터 수치, 넓은 지도와 사진, 거리별 기록, 1km 구간. -->
+    <Tabs.Content value="record" class="grid min-w-0 gap-3">
       <MetricStrip m={detail.metrics} />
-      <div class="grid items-start gap-3 @4xl:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-        <div class="grid min-w-0 gap-2">
-          <RouteMap {detail} {highlight} activePhoto={activePin} class="h-[260px]" />
-          <PhotoStrip {pins} active={activePin} onFocusPin={focusPin} />
-        </div>
-        <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
+      <div class="grid min-w-0 gap-2">
+        <RouteMap {detail} {highlight} activePhoto={activePin} class="h-[380px] max-md:h-[300px]" />
+        <PhotoStrip {pins} active={activePin} onFocusPin={focusPin} />
       </div>
+      <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
       <SplitsChart splits={detail.splits} totalKm={detail.metrics.distanceKm} sport={detail.sport} onFocusKm={focusKm} />
     </Tabs.Content>
 

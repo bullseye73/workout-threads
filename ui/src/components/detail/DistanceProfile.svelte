@@ -118,7 +118,7 @@
   const best = (i: number) => (rows[i].invert ? stats[i]?.min : stats[i]?.max)
 </script>
 
-<section class="rounded-lg border bg-card px-3.5 pt-2.5 pb-2" aria-label="거리별 그래프">
+<section class="min-w-0 rounded-lg border bg-card px-3.5 pt-2.5 pb-2" aria-label="거리별 그래프">
   <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
     <h3 class="m-0 text-[13px] font-bold">거리별 기록</h3>
     <div class="flex items-center gap-2 text-[11px] text-muted-foreground">
@@ -147,7 +147,7 @@
   <div class="grid" role="group" aria-label="고도·심박·속도 그래프">
     {#each rows as row, i (row.key)}
       {@const v = highlight >= 0 ? row.data[highlight] : stats[i]?.avg}
-      <div class={cn('grid grid-cols-[104px_1fr] items-stretch', i > 0 && 'border-t')}>
+      <div class={cn('grid grid-cols-[104px_minmax(0,1fr)] items-stretch', i > 0 && 'border-t')}>
         <div class="flex flex-col justify-center gap-0.5 py-1.5 pr-2">
           <span class="text-[11px] text-muted-foreground">{row.label}{highlight >= 0 ? '' : ' 평균'}</span>
           <span class="text-xl leading-none font-bold tracking-tight" style:color={colorOf(i, v)}>
@@ -159,7 +159,7 @@
             </span>
           {/if}
         </div>
-        <div class={cn('relative cursor-crosshair', i === rows.length - 1 ? 'h-[84px]' : 'h-[64px]')}
+        <div class={cn('relative min-w-0 cursor-crosshair', i === rows.length - 1 ? 'h-[84px]' : 'h-[64px]')}
           role="presentation" onmousemove={move} onmouseleave={() => onHover(-1)}>
           <canvas bind:this={canvases[i]} aria-label="{row.label} 그래프"></canvas>
         </div>
