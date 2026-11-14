@@ -107,10 +107,18 @@ git config core.hooksPath .githooks
 
 ### 데스크톱 앱 개발 모드
 
-화면 개발 서버(5173 포트)를 띄우고 앱 창을 엽니다. 화면 코드를 고치면 바로 반영됩니다.
+화면 개발 서버(5173 포트)를 띄우고 앱 창을 엽니다. 화면 코드를 고치면 바로 반영됩니다. 저장소 루트에서 실행합니다.
 
 ```bash
-cd src-tauri && npx --prefix ../ui tauri dev
+npm --prefix ui run app:dev
+```
+
+`app:dev`는 `ui/node_modules`의 Tauri CLI를 `src-tauri/` 폴더에서 실행합니다. 다른 폴더에서 `npx --prefix ../ui tauri dev`를 직접 실행하면 `../ui`가 엉뚱한 곳을 가리켜 `failed to run 'cargo metadata'` 오류가 납니다. 직접 실행하려면 반드시 `src-tauri/` 안에서 하세요.
+
+환경 점검(Rust·Node·Tauri 버전, 프로젝트 인식)은 다음 명령으로 합니다.
+
+```bash
+npm --prefix ui run app:info
 ```
 
 ### 브라우저에서 화면만 보기
@@ -126,7 +134,7 @@ npm --prefix ui run dev
 ### 설치 파일 만들기
 
 ```bash
-cd src-tauri && npx --prefix ../ui tauri build
+npm --prefix ui run app:build
 ```
 
 결과물은 `target/release/bundle/` 아래(macOS `dmg/`, Windows `msi/`·`nsis/`, Linux `deb/`·`appimage/`)에 생깁니다. 서명은 하지 않으므로 처음 실행할 때 OS의 확인 창이 뜰 수 있습니다.

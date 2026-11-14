@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
     "test": "vitest run",
-    "check:colors": "sh scripts/check-colors.sh"
+    "check:colors": "sh scripts/check-colors.sh",
+    "app:dev": "cd ../src-tauri && tauri dev",
+    "app:build": "cd ../src-tauri && tauri build",
+    "app:info": "cd ../src-tauri && tauri info"
   },
   "devDependencies": {
     "@internationalized/date": "^3.12.4",
