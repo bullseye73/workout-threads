@@ -9,12 +9,13 @@
   import { photoPins } from '$lib/profile'
   import { nearestIndex, toChartSeries } from '$lib/series'
   import { cn } from '$lib/utils'
-  import PostPanel from '../PostPanel.svelte'
   import RouteMap from '../RouteMap.svelte'
   import SplitsTable from '../SplitsTable.svelte'
   import DistanceProfile from './DistanceProfile.svelte'
   import MetricStrip from './MetricStrip.svelte'
   import PhotoRail from './PhotoRail.svelte'
+  import PostTab from './PostTab.svelte'
+  import { ask } from '$lib/confirm.svelte'
 
   let { id, status, onChanged }: { id: string; status: PostStatus; onChanged: () => void } = $props()
 
@@ -24,6 +25,20 @@
   let highlight = $state(-1)
   let activePin = $state<number | null>(null)
   let note = $state('')
+  let postDirty = $state(false)
+
+  /** 게시 탭에 저장 안 한 수정이 있으면 나가기 전에 묻는다. Workbench도 다른 운동을 고르기 전에 부른다. */
+  export async function requestLeave(): Promise<boolean> {
+    if (!postDirty) return true
+    const ok = await ask({ title: '저장하지 않은 수정 내용이 있어요. 나갈까요?', description: '나가면 고친 글이 사라져요.', action: '나가기', cancel: '계속 고치기', destructive: true })
+    if (ok) postDirty = false
+    return ok
+  }
+  async function changeTab(v: string) {
+    if (v === tab) return
+    if (tab === 'post' && !(await requestLeave())) return
+    tab = v as 'record' | 'post'
+  }
 
   $effect(() => {
     detail = null
@@ -55,7 +70,7 @@
 {#if error}
   <p class="text-destructive" role="alert">운동을 불러오지 못했어요: {error}</p>
 {:else if detail && series}
-  <Tabs.Root class="flex-col gap-0" value={tab} onValueChange={v => (tab = v as 'record' | 'post')}>
+  <Tabs.Root class="flex-col gap-0" bind:value={() => tab, v => void changeTab(v)}>
     <header class="mb-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
       <h2 class="m-0 flex items-center gap-2 text-xl font-bold tracking-tight">
         <i class={cn('inline-block h-5 w-1 rounded-sm', detail.sport === 'running' ? 'bg-run' : detail.sport === 'cycling' ? 'bg-ride' : 'bg-faint')}></i>
@@ -83,7 +98,7 @@
     </Tabs.Content>
 
     <Tabs.Content value="post">
-      <PostPanel {id} onBack={() => { tab = 'record'; onChanged() }} />
+      <PostTab {id} onDirtyChange={d => (postDirty = d)} onStatusChange={() => onChanged()} />
     </Tabs.Content>
   </Tabs.Root>
 {:else}

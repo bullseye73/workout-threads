@@ -3,6 +3,7 @@
   import Settings from './components/Settings.svelte'
   import { ModeWatcher } from 'mode-watcher'
   import Workbench from './components/workbench/Workbench.svelte'
+  import ConfirmHost from '$lib/components/ConfirmHost.svelte'
   import { api, isTauri } from './lib/api'
   import type { ImportReport } from './lib/bindings/ImportReport'
 
@@ -61,6 +62,7 @@
 </script>
 
 <ModeWatcher />
+<ConfirmHost />
 <main>
   {#if importing || enriching || importError}
     <div class="fixed inset-x-0 bottom-0 z-40 flex flex-col gap-1 p-3">

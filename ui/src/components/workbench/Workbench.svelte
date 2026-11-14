@@ -20,7 +20,7 @@
   let backup = $state<BackupStatusDto | null>(null)
   let filter = $state<ListFilter>('all')
   let selected = $state<string | null>(null)
-  let paneKey = $state(0)
+  let pane = $state<{ requestLeave: () => Promise<boolean> } | null>(null)
 
   $effect(() => {
     let off: (() => void) | undefined
@@ -52,6 +52,11 @@
   function select(id: string | null) {
     selected = id
   }
+  /** 사용자가 고를 때만: 게시 탭의 저장 안 한 수정이 있으면 먼저 묻는다. */
+  async function choose(id: string) {
+    if (id === selected || (pane && !(await pane.requestLeave()))) return
+    select(id)
+  }
   function shift(delta: number) {
     const d = new Date(year, month - 1 + delta, 1)
     onMonth(d.getFullYear(), d.getMonth() + 1)
@@ -62,26 +67,25 @@
   }
   async function refresh() {
     view = await api.monthView(year, month)
-    paneKey++
   }
 </script>
 
 <div class="grid h-dvh grid-rows-[auto_auto_1fr] max-md:h-auto">
   <TopBar {year} {month} {view} {backup} {unmatched} onShift={shift} onSaveGoal={saveGoal}
     {onImport} {onUnmatched} {onSettings} />
-  <MonthRibbon days={ribbon} {month} {selected} onSelect={select} />
+  <MonthRibbon days={ribbon} {month} {selected} onSelect={choose} />
 
   {#if error}
     <p class="p-4 text-destructive" role="alert">기록을 불러오지 못했어요: {error}</p>
   {:else}
     <div class="grid min-h-0 grid-cols-[330px_1fr] max-md:grid-cols-1">
       <aside class="overflow-y-auto border-r bg-card max-md:border-r-0 max-md:border-b" aria-label="운동 목록">
-        <ActivityList {groups} {filter} {readyCount} {selected} onFilter={f => (filter = f)} onSelect={select} />
+        <ActivityList {groups} {filter} {readyCount} {selected} onFilter={f => (filter = f)} onSelect={choose} />
       </aside>
       <main class="min-w-0 overflow-y-auto p-5 max-sm:p-4">
         {#if selected}
-          {#key `${selected}-${paneKey}`}
-            <ActivityPane id={selected} status={selectedItem?.postStatus ?? 'none'} onChanged={() => void refresh()} />
+          {#key selected}
+            <ActivityPane bind:this={pane} id={selected} status={selectedItem?.postStatus ?? 'none'} onChanged={() => void refresh()} />
           {/key}
         {:else if view}
           <p class="text-muted-foreground">{view.days.length ? '왼쪽에서 운동을 고르세요.' : '이번 달 기록이 없어요.'}</p>
