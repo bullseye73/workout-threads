@@ -72,11 +72,16 @@
     if (!f || f.n === handledFocus) return
     if (allGroups.some(g => g.items.some(i => i.activityId === f.id))) {
       handledFocus = f.n
-      paneTab = f.tab
-      paneOpenN++
-      select(f.id)
+      void openFocused(f)
     }
   })
+  /** 게시 탭에 저장 안 한 수정이 있으면 먼저 묻고, 그 운동의 요청한 탭으로 연다. */
+  async function openFocused(f: { id: string; tab: 'record' | 'post' }) {
+    if (pane && !(await pane.requestLeave())) return
+    paneTab = f.tab
+    paneOpenN++
+    select(f.id)
+  }
   async function shift(delta: number) {
     if (pane && !(await pane.requestLeave())) return
     const d = new Date(year, month - 1 + delta, 1)
@@ -106,7 +111,7 @@
       <main class="min-w-0 overflow-y-auto p-5 max-sm:p-4">
         {#if selected}
           {#key `${selected}:${paneOpenN}`}
-            <ActivityPane bind:this={pane} id={selected} status={selectedItem?.postStatus ?? 'none'} initialTab={paneTab}
+            <ActivityPane bind:this={pane} id={selected} status={selectedItem?.postStatus ?? 'none'} initialTab={paneTab} {reloadKey}
               onChanged={() => void refresh()} />
           {/key}
         {:else if view}

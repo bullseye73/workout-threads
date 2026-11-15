@@ -139,7 +139,7 @@ const delay = <T>(v: T) => new Promise<T>(r => setTimeout(() => r(v), 50))
 
 export const mockApi: Api = {
   planUpload: async (all, exclude) => { const paths = all.filter(p => !exclude.includes(p)); return delay({
-    newActivities: paths.some(p => p.endsWith('.fit')) ? [{ source: paths.find(p => p.endsWith('.fit'))!, activityId: 'm4', date: '2026-11-02',
+    newActivities: paths.some(p => p.endsWith('.fit')) ? [{ source: paths.find(p => p.endsWith('.fit'))!, sources: paths.filter(p => p.endsWith('.fit')), activityId: 'm4', date: '2026-11-02',
       title: '월요일 이른아침 러닝', sport: 'running' as const, km: 8.1, photos: [], libraryPhotos: 0 }] : [],
     existing: [], duplicates: [],
     excluded: paths.filter(p => !p.endsWith('.fit')).map(p => ({ file: p.split('/').pop()!, reason: '붙일 운동이 없어 제외' })),

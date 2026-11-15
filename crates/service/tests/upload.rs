@@ -256,3 +256,48 @@ fn excluded_paths_are_left_out_even_inside_a_folder() {
         .unwrap();
     assert_eq!(lib.post_view(&r.created[0]).unwrap().card_paths.len(), 1);
 }
+
+#[test]
+fn same_photo_path_twice_is_planned_once() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    let dir = t.path().join("src");
+    copy_as(FIT_1025, &dir, "ride.fit");
+    let p1 = copy_as(P_0723, &dir, "p1.jpeg");
+    let paths = [dir.clone(), p1];
+    let plan = lib.plan_upload(&paths, &[]).unwrap();
+    assert_eq!(plan.new_activities[0].photos.len(), 1);
+    let r = lib.commit_upload(&paths, &[]).unwrap();
+    assert_eq!(lib.post_view(&r.created[0]).unwrap().card_paths.len(), 1);
+}
+
+#[test]
+fn same_content_under_two_names_is_stored_once() {
+    workout_testkit::require_samples!();
+    let (t, lib) = temp_library();
+    let dir = t.path().join("src");
+    copy_as(FIT_1025, &dir, "ride.fit");
+    copy_as(P_0723, &dir, "a.jpeg");
+    copy_as(P_0723, &dir, "b.jpeg");
+    let plan = lib.plan_upload(std::slice::from_ref(&dir), &[]).unwrap();
+    assert_eq!(plan.new_activities[0].photos.len(), 1);
+    assert_eq!(plan.duplicates, vec!["b.jpeg".to_string()]);
+}
+
+#[test]
+fn every_copy_of_a_fit_is_listed_as_its_source() {
+    workout_testkit::require_samples!();
+    let (t, lib) = temp_library();
+    let a = copy_as(FIT_1025, &t.path().join("x"), "a.fit");
+    let b = copy_as(FIT_1025, &t.path().join("y"), "b.fit");
+    let plan = lib.plan_upload(&[a.clone(), b.clone()], &[]).unwrap();
+    let mut s = plan.new_activities[0].sources.clone();
+    s.sort();
+    assert_eq!(
+        s,
+        vec![
+            a.to_string_lossy().to_string(),
+            b.to_string_lossy().to_string()
+        ]
+    );
+}

@@ -180,12 +180,19 @@ impl Library {
     }
 
     pub(crate) fn build_plan(&self, paths: &[PathBuf], exclude: &[PathBuf]) -> Result<Plan> {
-        let (mut fits, mut photos) = expand(paths, true);
-        fits.retain(|p| !exclude.contains(p));
-        photos.retain(|p| !exclude.contains(p));
+        let (fits, photos) = expand(paths, true);
+        // 폴더와 그 안 파일을 함께 올리는 등 같은 경로가 두 번 나와도 한 번만.
+        let mut seen_paths: HashSet<PathBuf> = HashSet::new();
+        let mut keep = |p: &PathBuf| {
+            !exclude.contains(p)
+                && seen_paths.insert(std::fs::canonicalize(p).unwrap_or_else(|_| p.clone()))
+        };
+        let fits: Vec<PathBuf> = fits.into_iter().filter(|p| keep(p)).collect();
+        let photos: Vec<PathBuf> = photos.into_iter().filter(|p| keep(p)).collect();
         let mut view = UploadPlan::default();
         let mut new_acts: Vec<(PathBuf, Activity)> = Vec::new();
         let mut seen: HashSet<String> = HashSet::new();
+        let mut copies: HashMap<String, Vec<String>> = HashMap::new();
 
         // FIT: 운동 id로 중복을 걸러 새 운동 / 이미 있는 운동으로 나눈다.
         for fit in fits {
@@ -196,6 +203,10 @@ impl Library {
                 });
                 continue;
             };
+            copies
+                .entry(a.header.id.clone())
+                .or_default()
+                .push(fit.to_string_lossy().into_owned());
             if !seen.insert(a.header.id.clone()) {
                 continue;
             }
@@ -214,9 +225,15 @@ impl Library {
         let new_only: Vec<Activity> = new_acts.iter().map(|(_, a)| a.clone()).collect();
 
         // 올린 사진.
+        let mut batch_hashes: HashSet<String> = HashSet::new();
         for photo in photos {
             let bytes = std::fs::read(&photo)?;
             let hash = content_hash(&bytes);
+            // 이번에 같은 내용의 사진이 이미 나왔으면 다시 넣지 않는다.
+            if !batch_hashes.insert(hash.clone()) {
+                view.duplicates.push(file_name(&photo));
+                continue;
+            }
             if let Some(row) = self.store.photo_by_hash(&hash)? {
                 if row.activity_id.is_some() {
                     view.duplicates.push(file_name(&photo));
@@ -254,8 +271,18 @@ impl Library {
                 &photo,
                 batch_offset.unwrap_or_else(|| local_offset_at(Utc::now())),
             )?;
-            let offset =
-                batch_offset.unwrap_or_else(|| rough.taken_at.map(local_offset_at).unwrap_or(0));
+            // 시간대: 이번 운동 → (사진만이면) 그 무렵 보관함 운동 → 이 PC 시간대 (가져오기와 같은 규칙).
+            let near_offset = match (batch_offset, rough.taken_at) {
+                (None, Some(t)) => self
+                    .store
+                    .activities_near(t, NEAR_HOURS)?
+                    .first()
+                    .map(|r| r.header.utc_offset_s),
+                _ => None,
+            };
+            let offset = batch_offset
+                .or(near_offset)
+                .unwrap_or_else(|| rough.taken_at.map(local_offset_at).unwrap_or(0));
             let meta = read_photo_meta(&photo, offset)?;
             let Some(t) = meta.taken_at else {
                 view.excluded.push(ImportIssue {
@@ -316,7 +343,9 @@ impl Library {
             }
         }
 
-        view.new_activities_mut(&new_acts);
+        for a in view.new_activities_mut(&new_acts).iter_mut() {
+            a.sources = copies.remove(&a.activity_id).unwrap_or_default();
+        }
         view.existing
             .sort_by(|a, b| a.date.cmp(&b.date).then(a.activity_id.cmp(&b.activity_id)));
         Ok(Plan {
@@ -432,6 +461,7 @@ impl Library {
 fn planned(fit: &Path, h: &ActivityHeader) -> PlannedActivity {
     PlannedActivity {
         source: fit.to_string_lossy().into_owned(),
+        sources: vec![],
         activity_id: h.id.clone(),
         date: iso(h.start_local().date()),
         title: activity_title(h.start_local(), h.sport),

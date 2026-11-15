@@ -336,6 +336,8 @@ pub struct PlannedPhoto {
 pub struct PlannedActivity {
     /// FIT 원본 경로.
     pub source: String,
+    /// 같은 운동의 FIT 원본 경로 전부 (이름만 다른 사본 포함, "빼기"가 모두 빼도록).
+    pub sources: Vec<String>,
     pub activity_id: String,
     /// YYYY-MM-DD.
     pub date: String,

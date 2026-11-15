@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   // 상세 패널: 머리(종목·제목·날짜·게시 상태·글 복사) + 탭(기록 / 게시 준비).
   import StatusBadge from '$lib/components/StatusBadge.svelte'
   import { Button } from '$lib/components/ui/button'
@@ -19,7 +20,11 @@
   import { ask } from '$lib/confirm.svelte'
   import { createPostEditor } from '$lib/postEditor.svelte'
 
-  let { id, status, onChanged, initialTab = 'record' }: { id: string; status: PostStatus; onChanged: () => void; initialTab?: 'record' | 'post' } = $props()
+  let { id, status, onChanged, initialTab = 'record', reloadKey = 0 }: {
+    id: string; status: PostStatus; onChanged: () => void; initialTab?: 'record' | 'post'
+    /** 바뀌면 상세를 다시 받는다 (예: 게시물 작성으로 사진을 보탠 뒤). */
+    reloadKey?: number
+  } = $props()
 
   let detail = $state<ActivityDetail | null>(null)
   let error = $state('')
@@ -48,6 +53,15 @@
     detail = null
     error = ''
     api.activityDetail(id).then(d => (detail = d)).catch(e => (error = String(e)))
+  })
+  // 목록이 새로 고쳐지면(사진을 보탰을 때 등) 화면을 비우지 않고 다시 받는다.
+  // svelte-ignore state_referenced_locally
+  let seenReload = reloadKey
+  $effect(() => {
+    const k = reloadKey
+    if (k === seenReload) return
+    seenReload = k
+    untrack(() => api.activityDetail(id).then(d => (detail = d)).catch(() => undefined))
   })
 
   const series = $derived(detail ? toChartSeries(detail) : null)
@@ -101,7 +115,9 @@
     <Tabs.Content value="record" class="grid min-w-0 gap-3">
       <MetricStrip m={detail.metrics} />
       <div class="grid min-w-0 gap-2">
-        <RouteMap {detail} {highlight} activePhoto={activePin} class="h-[380px] max-md:h-[300px]" />
+        {#key detail.photos.length}
+          <RouteMap {detail} {highlight} activePhoto={activePin} class="h-[380px] max-md:h-[300px]" />
+        {/key}
         <PhotoStrip {pins} active={activePin} onFocusPin={focusPin} />
       </div>
       <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
