@@ -103,6 +103,7 @@ export function mockDetail(id: string): ActivityDetail {
       latLon: a.gps ? pts : pts.map(() => null),
     },
     splits: Array.from({ length: Math.ceil(a.km) }, (_, i) => ({ km: i + 1, duration: hms(a.movingS / a.km), avgHr: a.hr })),
+    fitFile: `/mock/files/${a.date.replaceAll('-', '')}/activity.fit`, folder: `/mock/files/${a.date.replaceAll('-', '')}`,
   }
 }
 

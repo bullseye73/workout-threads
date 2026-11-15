@@ -8,7 +8,7 @@ function detail(sport: SportKind, o: { speedKmh: (number | null)[] }): ActivityD
   return {
     id: 'x', sport, title: '', date: '', metrics: { distanceKm: 1, moving: '', elapsed: '', pace: null, speedKmh: null,
       avgHr: null, maxHr: null, ascentM: null, avgCadence: null },
-    route: [], start: null, end: null, photos: [], splits: [],
+    route: [], start: null, end: null, photos: [], splits: [], fitFile: '', folder: '',
     series: { distanceKm: Array.from({ length: n }, (_, i) => i), hr: Array(n).fill(140), speedKmh: o.speedKmh,
       altitudeM: Array(n).fill(10), latLon: Array(n).fill(null) },
   }

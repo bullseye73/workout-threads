@@ -57,3 +57,15 @@ describe('mockApi.importForDate', () => {
     expect(r.skipped.length).toBeGreaterThan(0)
   })
 })
+
+describe('mockApi upload', () => {
+  it('plans one new post and one excluded file', async () => {
+    const p = await mockApi.planUpload(['a.fit', 'b.jpg'])
+    expect(p.newActivities.length).toBe(1)
+    expect(p.excluded.length).toBe(1)
+  })
+  it('commit creates one post', async () => {
+    const r = await mockApi.commitUpload(['a.fit'])
+    expect(r.created.length).toBe(1)
+  })
+})

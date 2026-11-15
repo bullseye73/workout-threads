@@ -1,6 +1,8 @@
 // 화면이 쓰는 데이터 접근 계층. Tauri 안에서는 Rust 명령을, 브라우저에서는 가짜 데이터를 쓴다.
 import type { ActivityDetail } from './bindings/ActivityDetail'
 import type { ImportReport } from './bindings/ImportReport'
+import type { UploadPlan } from './bindings/UploadPlan'
+import type { UploadResult } from './bindings/UploadResult'
 import type { MonthView } from './bindings/MonthView'
 import type { PhotoDto } from './bindings/PhotoDto'
 import type { PostView } from './bindings/PostView'
@@ -15,6 +17,8 @@ import { mockDetail, mockGoal, mockMonth, mockPost, mockPosts } from './mock'
 export interface Api {
   importPaths(paths: string[]): Promise<ImportReport>
   importForDate(date: string, paths: string[]): Promise<ImportReport>
+  planUpload(paths: string[]): Promise<UploadPlan>
+  commitUpload(paths: string[]): Promise<UploadResult>
   monthView(year: number, month: number): Promise<MonthView>
   activityDetail(id: string): Promise<ActivityDetail>
   postView(id: string): Promise<PostView>
@@ -67,6 +71,8 @@ async function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T
 export const tauriApi: Api = {
   importPaths: paths => invoke('import_paths', { paths }),
   importForDate: (date, paths) => invoke('import_for_date', { date, paths }),
+  planUpload: paths => invoke('plan_upload', { paths }),
+  commitUpload: paths => invoke('commit_upload', { paths }),
   monthView: (year, month) => invoke('month_view', { year, month }),
   activityDetail: id => invoke('activity_detail', { id }),
   postView: activityId => invoke('post_view', { activityId }),
@@ -141,6 +147,14 @@ export const mockApi: Api = {
     cardsCreated: paths.length ? 2 : 0, unmatchedPhotos: [], skipped: [] }),
   importForDate: async (_date, paths) => delay({ addedActivities: paths.length ? ['m4'] : [], duplicateFiles: [], failed: [],
     cardsCreated: paths.length ? 1 : 0, unmatchedPhotos: [], skipped: [{ file: 'IMG_0412.jpeg', reason: '11월 1일에 찍었어요' }] }),
+  planUpload: async paths => delay({
+    newActivities: paths.some(p => p.endsWith('.fit')) ? [{ source: paths.find(p => p.endsWith('.fit'))!, activityId: 'm4', date: '2026-11-02',
+      title: '월요일 이른아침 러닝', sport: 'running' as const, km: 8.1, photos: [], libraryPhotos: 0 }] : [],
+    existing: [], duplicates: [],
+    excluded: paths.filter(p => !p.endsWith('.fit')).map(p => ({ file: p.split('/').pop()!, reason: '붙일 운동이 없어 제외' })),
+  }),
+  commitUpload: async paths => delay({ created: paths.some(p => p.endsWith('.fit')) ? ['m4'] : [], updated: [], cardsCreated: 0, failed: [],
+    excluded: [] }),
   monthView: async (y, m) => delay(mockMonth(y, m)),
   activityDetail: async id => delay(mockDetail(id)),
   postView: async id => delay(mockPost(id)),
