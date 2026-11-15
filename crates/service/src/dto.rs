@@ -202,6 +202,10 @@ pub struct ActivityDetail {
     pub photos: Vec<PhotoDto>,
     pub series: SeriesDto,
     pub splits: Vec<SplitDto>,
+    /// 보관함 FIT 절대 경로.
+    pub fit_file: String,
+    /// 보관 폴더 절대 경로.
+    pub folder: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
@@ -369,4 +373,18 @@ pub struct UploadPlan {
     pub excluded: Vec<ImportIssue>,
     /// 이미 보관된 사진 파일 이름.
     pub duplicates: Vec<String>,
+}
+
+/// 게시물 작성 저장 결과.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct UploadResult {
+    /// 새로 만든 운동(게시물) id, 날짜 순.
+    pub created: Vec<String>,
+    /// 사진을 보탠 기존 운동 id.
+    pub updated: Vec<String>,
+    pub cards_created: u32,
+    pub failed: Vec<ImportIssue>,
+    pub excluded: Vec<ImportIssue>,
 }

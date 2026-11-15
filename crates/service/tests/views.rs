@@ -155,3 +155,23 @@ fn goals_carry_over_to_other_months_until_changed() {
         Some(400.0)
     );
 }
+
+#[test]
+fn activity_detail_lists_stored_files() {
+    workout_testkit::require_samples!();
+    let (_t, mut lib) = temp_library();
+    let id = lib
+        .import_paths(&[sample_path("20261025")])
+        .unwrap()
+        .added_activities[0]
+        .clone();
+    let d = lib.activity_detail(&id).unwrap();
+    assert!(
+        d.fit_file
+            .ends_with("files/20261025/24842957203_ACTIVITY.fit"),
+        "{}",
+        d.fit_file
+    );
+    assert!(std::path::Path::new(&d.fit_file).exists());
+    assert!(d.folder.ends_with("files/20261025"), "{}", d.folder);
+}

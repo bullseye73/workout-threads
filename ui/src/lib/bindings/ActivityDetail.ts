@@ -13,4 +13,12 @@ date: string, metrics: MetricsDto,
 /**
  * [lat, lon].
  */
-route: Array<[number, number]>, start: [number, number] | null, end: [number, number] | null, photos: Array<PhotoDto>, series: SeriesDto, splits: Array<SplitDto>, };
+route: Array<[number, number]>, start: [number, number] | null, end: [number, number] | null, photos: Array<PhotoDto>, series: SeriesDto, splits: Array<SplitDto>, 
+/**
+ * 보관함 FIT 절대 경로.
+ */
+fitFile: string, 
+/**
+ * 보관 폴더 절대 경로.
+ */
+folder: string, };

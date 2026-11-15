@@ -159,3 +159,76 @@ fn locked_post_is_flagged() {
     let plan = lib.plan_upload(&[p]).unwrap();
     assert!(plan.existing[0].post_locked);
 }
+
+#[test]
+fn commit_matches_plan() {
+    workout_testkit::require_samples!();
+    let (_t, mut lib) = temp_library();
+    let paths = [sample_path("20261011"), sample_path("20261025")];
+    let plan = lib.plan_upload(&paths).unwrap();
+    let r = lib.commit_upload(&paths).unwrap();
+    let planned: Vec<_> = plan
+        .new_activities
+        .iter()
+        .map(|a| a.activity_id.clone())
+        .collect();
+    assert_eq!(r.created, planned);
+    for a in &plan.new_activities {
+        assert_eq!(
+            lib.post_view(&a.activity_id).unwrap().card_paths.len(),
+            a.photos.len()
+        );
+    }
+    assert_eq!(r.cards_created, 6);
+}
+
+#[test]
+fn commit_attaches_late_photo_and_library_photo() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    let a = late_photo(&t.path().join("in"), "a.jpeg", "2026:10:25 20:00:00");
+    lib.import_paths(&[a]).unwrap();
+    let b = late_photo(&t.path().join("in"), "b.jpeg", "2026:10:25 20:05:00");
+    let r = lib.commit_upload(&[sample_path(FIT_1025), b]).unwrap();
+    assert_eq!(r.created.len(), 1);
+    assert_eq!(lib.post_view(&r.created[0]).unwrap().card_paths.len(), 2);
+    assert!(lib.unmatched_photos().unwrap().is_empty());
+}
+
+#[test]
+fn excluded_photos_are_not_stored() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    let before = count_files(&lib.root().join("files"));
+    let p = late_photo(&t.path().join("in"), "lonely.jpeg", "2026:10:20 12:00:00");
+    let r = lib.commit_upload(&[p]).unwrap();
+    assert_eq!(r.excluded.len(), 1);
+    assert_eq!(count_files(&lib.root().join("files")), before);
+}
+
+#[test]
+fn existing_workout_gets_photos_and_is_updated() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    let id = lib
+        .import_paths(&[sample_path(FIT_1025)])
+        .unwrap()
+        .added_activities[0]
+        .clone();
+    let p = late_photo(&t.path().join("in"), "late.jpeg", "2026:10:25 20:00:00");
+    let r = lib.commit_upload(&[p]).unwrap();
+    assert!(r.created.is_empty());
+    assert_eq!(r.updated, vec![id.clone()]);
+    assert_eq!(lib.post_view(&id).unwrap().card_paths.len(), 1);
+}
+
+#[test]
+fn originals_are_untouched() {
+    workout_testkit::require_samples!();
+    let (t, mut lib) = temp_library();
+    let dir = t.path().join("src");
+    let fit = copy_as(FIT_1025, &dir, "ride.fit");
+    let photo = copy_as(P_0723, &dir, "p.jpeg");
+    lib.commit_upload(std::slice::from_ref(&dir)).unwrap();
+    assert!(fit.exists() && photo.exists());
+}

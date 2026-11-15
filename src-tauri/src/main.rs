@@ -34,23 +34,18 @@ async fn run<T: Send + 'static>(
     .map_err(|e| e.to_string())?
 }
 
+/// 올린 파일로 무엇이 만들어질지 (저장 안 함).
 #[tauri::command]
-async fn import_paths(lib: State<'_, Shared>, paths: Vec<String>) -> Res<ImportReport> {
+async fn plan_upload(lib: State<'_, Shared>, paths: Vec<String>) -> Res<UploadPlan> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    run(lib, move |l| l.import_paths(&paths)).await
+    run(lib, move |l| l.plan_upload(&paths)).await
 }
 
-/// 고른 날짜(YYYY-MM-DD)의 FIT·사진만 가져온다.
+/// 올린 파일을 보관함에 저장하고 운동마다 게시물을 만든다.
 #[tauri::command]
-async fn import_for_date(
-    lib: State<'_, Shared>,
-    date: String,
-    paths: Vec<String>,
-) -> Res<ImportReport> {
-    let date = workout_service::chrono_utc::NaiveDate::parse_from_str(&date, "%Y-%m-%d")
-        .map_err(|_| format!("날짜 형식이 잘못됐어요: {date}"))?;
+async fn commit_upload(lib: State<'_, Shared>, paths: Vec<String>) -> Res<UploadResult> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    run(lib, move |l| l.import_for_date(date, &paths)).await
+    run(lib, move |l| l.commit_upload(&paths)).await
 }
 
 #[tauri::command]
@@ -325,8 +320,8 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            import_paths,
-            import_for_date,
+            plan_upload,
+            commit_upload,
             month_view,
             activity_detail,
             post_view,

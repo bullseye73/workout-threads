@@ -157,6 +157,12 @@ impl Library {
                 .iter()
                 .map(|p| self.photo_dto(p))
                 .collect(),
+            fit_file: self.abs(&row.fit_path),
+            folder: row
+                .fit_path
+                .rsplit_once('/')
+                .map(|(d, _)| self.abs(d))
+                .unwrap_or_default(),
             series: series(&a.samples),
             splits: km_splits(&a.samples)
                 .into_iter()

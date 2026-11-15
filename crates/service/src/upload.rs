@@ -1,7 +1,7 @@
 //! 게시물 작성: 올린 FIT·사진으로 무엇이 만들어질지 계산(미리보기)하고, 같은 계산대로 저장한다.
 //! 사진 붙이기 규칙은 `build_plan` 한 곳에만 있다:
 //! ① 이번 새 운동과 시간 일치 → ② 보관함 운동과 시간 일치 → ③ 촬영 날짜에 운동이 하나뿐이면 그 운동 → ④ 제외.
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use workout_core::chrono::{DateTime, Datelike, NaiveDate, Utc};
@@ -11,8 +11,10 @@ use workout_core::matching::match_photo;
 use workout_core::model::{Activity, ActivityHeader};
 use workout_core::photo::read_photo_meta;
 
-use crate::files::content_hash;
-use crate::import::{NEAR_HOURS, expand, file_name, local_date, local_offset_at};
+use workout_store::PhotoRow;
+
+use crate::files::{content_hash, copy_new, join_rel, unique_rel};
+use crate::import::{NEAR_HOURS, day_dir, expand, file_name, local_date, local_offset_at};
 use crate::*;
 
 pub(crate) const NO_DATE: &str = "촬영 날짜가 없어요";
@@ -20,7 +22,6 @@ pub(crate) const NO_TARGET: &str = "붙일 운동이 없어 제외";
 pub(crate) const BAD_FIT: &str = "읽을 수 없는 파일";
 
 /// 계획된 사진 한 장의 출처.
-#[allow(dead_code)] // Task 2(commit_upload)에서 씀
 #[derive(Clone, Debug)]
 pub(crate) enum PhotoSrc {
     /// 새로 올린 파일.
@@ -29,7 +30,6 @@ pub(crate) enum PhotoSrc {
     Library(i64),
 }
 
-#[allow(dead_code)] // Task 2(commit_upload)에서 씀
 #[derive(Clone, Debug)]
 pub(crate) struct Placed {
     pub src: PhotoSrc,
@@ -41,7 +41,6 @@ pub(crate) struct Placed {
 }
 
 /// 미리보기 + 저장에 필요한 원본 데이터.
-#[allow(dead_code)] // Task 2(commit_upload)에서 씀
 pub(crate) struct Plan {
     pub view: UploadPlan,
     /// (원본 경로, 파싱한 운동), 시작 시각 순.
@@ -58,6 +57,121 @@ impl Library {
     /// 저장하지 않고 무엇이 만들어질지 돌려준다.
     pub fn plan_upload(&self, paths: &[PathBuf]) -> Result<UploadPlan> {
         Ok(self.build_plan(paths)?.view)
+    }
+
+    /// 미리보기와 같은 계산으로 저장한다: FIT마다 운동·게시물 하나, 사진은 계획된 운동에 붙인다.
+    /// 하나가 실패해도 나머지는 계속하고 `failed`에 담는다. 원본 파일은 건드리지 않는다.
+    pub fn commit_upload(&mut self, paths: &[PathBuf]) -> Result<UploadResult> {
+        let plan = self.build_plan(paths)?;
+        let mut r = UploadResult {
+            excluded: plan.view.excluded.clone(),
+            ..Default::default()
+        };
+        let mut ready: HashMap<String, Activity> = HashMap::new();
+        for (fit, a) in &plan.new_acts {
+            match self.import_fit(fit) {
+                Ok(_) => {
+                    r.created.push(a.header.id.clone());
+                    ready.insert(a.header.id.clone(), a.clone());
+                }
+                Err(e) => r.failed.push(ImportIssue {
+                    file: file_name(fit),
+                    reason: e.to_string(),
+                }),
+            }
+        }
+        let mut touched: BTreeSet<String> = BTreeSet::new();
+        for (id, photos) in &plan.placements {
+            let a = match ready.get(id) {
+                Some(a) => a.clone(),
+                None if plan.new_acts.iter().any(|(_, n)| &n.header.id == id) => continue, // 운동 저장 실패
+                None => match self.load_activity(id) {
+                    Ok(a) => a,
+                    Err(e) => {
+                        r.failed.push(ImportIssue {
+                            file: id.clone(),
+                            reason: e.to_string(),
+                        });
+                        continue;
+                    }
+                },
+            };
+            for p in photos {
+                let done = match &p.src {
+                    PhotoSrc::New(path) => self.store_new_photo(path, &a, p, &mut r),
+                    PhotoSrc::Library(pid) => match self.store.photo(*pid)? {
+                        Some(row) => self.attach_photo(row, &a, p.km_mark).map(|_| true),
+                        None => Ok(false),
+                    },
+                };
+                match done {
+                    Ok(true) => {
+                        r.cards_created += 1;
+                        touched.insert(id.clone());
+                    }
+                    Ok(false) => {}
+                    Err(e) => r.failed.push(ImportIssue {
+                        file: id.clone(),
+                        reason: e.to_string(),
+                    }),
+                }
+            }
+        }
+        r.updated = plan
+            .view
+            .existing
+            .iter()
+            .map(|e| e.activity_id.clone())
+            .filter(|id| touched.contains(id))
+            .collect();
+        for id in r
+            .created
+            .iter()
+            .chain(&r.updated)
+            .cloned()
+            .collect::<Vec<_>>()
+        {
+            if let Err(e) = self.write_template_post(&id) {
+                r.failed.push(ImportIssue {
+                    file: id,
+                    reason: format!("글 작성 실패: {e}"),
+                });
+            }
+        }
+        Ok(r)
+    }
+
+    /// 새 사진을 운동 날짜 폴더에 복사하고 카드를 만든 뒤 저장한다. 카드를 만들었으면 true.
+    fn store_new_photo(
+        &mut self,
+        src: &Path,
+        a: &Activity,
+        p: &Placed,
+        r: &mut UploadResult,
+    ) -> Result<bool> {
+        let bytes = std::fs::read(src)?;
+        let rel = unique_rel(
+            &self.root,
+            &day_dir(a.header.start_local().date()),
+            &file_name(src),
+        );
+        copy_new(&bytes, &join_rel(&self.root, &rel))?;
+        let mut issues = ImportReport::default();
+        let card = self.make_card(a, &rel, &mut issues);
+        r.failed.extend(issues.failed);
+        let made = card.is_some();
+        self.store.insert_photo(&PhotoRow {
+            id: 0,
+            activity_id: Some(a.header.id.clone()),
+            path: rel,
+            taken_at: Some(p.taken_at),
+            km_mark: p.km_mark,
+            lat: p.lat,
+            lon: p.lon,
+            card_path: card,
+            content_hash: p.hash.clone(),
+        })?;
+        Ok(made)
     }
 
     pub(crate) fn build_plan(&self, paths: &[PathBuf]) -> Result<Plan> {
