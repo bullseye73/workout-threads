@@ -1,21 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import type { UploadPlan } from './bindings/UploadPlan'
-import { createLabel, removeActivityPaths } from './composer'
+import { activityExclusions, createLabel } from './composer'
 
 const photo = (path: string) => ({ path, fileName: path.split('/').pop()!, kmMark: null })
 const act = (source: string, photos: string[]) => ({ source, activityId: source, date: '2026-10-25', title: 't', sport: 'cycling' as const,
   km: 10, photos: photos.map(photo), libraryPhotos: 0 })
 const plan = (over: Partial<UploadPlan>): UploadPlan => ({ newActivities: [], existing: [], excluded: [], duplicates: [], ...over })
 
-describe('removeActivityPaths', () => {
-  it('drops the FIT and the photos planned for it, keeps the rest', () => {
-    const p = plan({ newActivities: [act('/a.fit', ['/a1.jpg', '/a2.jpg']), act('/b.fit', ['/b1.jpg'])] })
-    const paths = ['/a.fit', '/a1.jpg', '/a2.jpg', '/b.fit', '/b1.jpg', '/x.jpg']
-    expect(removeActivityPaths(p, paths, '/a.fit')).toEqual(['/b.fit', '/b1.jpg', '/x.jpg'])
+describe('activityExclusions', () => {
+  it('is the FIT plus the photos planned for that workout', () => {
+    const p = plan({ newActivities: [act('/f/a.fit', ['/f/a1.jpg', '/f/a2.jpg']), act('/f/b.fit', ['/f/b1.jpg'])] })
+    expect(activityExclusions(p, '/f/a.fit')).toEqual(['/f/a.fit', '/f/a1.jpg', '/f/a2.jpg'])
   })
-  it('a folder that was added stays (its files are re-read and re-planned)', () => {
-    const p = plan({ newActivities: [act('/f/a.fit', ['/f/a1.jpg'])] })
-    expect(removeActivityPaths(p, ['/f'], '/f/a.fit')).toEqual(['/f'])
+  it('unknown source excludes just that path', () => {
+    expect(activityExclusions(plan({}), '/x.fit')).toEqual(['/x.fit'])
   })
 })
 

@@ -50,22 +50,15 @@ describe('mockApi refine provider', () => {
   })
 })
 
-describe('mockApi.importForDate', () => {
-  it('returns a report that lists skipped files', async () => {
-    const r = await mockApi.importForDate('2026-11-14', ['a.fit'])
-    expect(Array.isArray(r.skipped)).toBe(true)
-    expect(r.skipped.length).toBeGreaterThan(0)
-  })
-})
 
 describe('mockApi upload', () => {
   it('plans one new post and one excluded file', async () => {
-    const p = await mockApi.planUpload(['a.fit', 'b.jpg'])
+    const p = await mockApi.planUpload(['a.fit', 'b.jpg'], [])
     expect(p.newActivities.length).toBe(1)
     expect(p.excluded.length).toBe(1)
   })
   it('commit creates one post', async () => {
-    const r = await mockApi.commitUpload(['a.fit'])
+    const r = await mockApi.commitUpload(['a.fit'], [])
     expect(r.created.length).toBe(1)
   })
 })

@@ -13,7 +13,7 @@ const view = (goalCyclingKm: number | null, goalRunningKm: number | null): Month
 function goalText(v: MonthView): string {
   const app = mount(TopBar, { target: document.body, props: {
     year: 2026, month: 11, view: v, backup: null, unmatched: 0,
-    onShift: () => {}, onSaveGoal: () => {}, onImport: () => {}, onUnmatched: () => {}, onSettings: () => {} } })
+    onShift: () => {}, onSaveGoal: () => {}, onCompose: () => {}, onUnmatched: () => {}, onSettings: () => {} } })
   flushSync()
   const btn = [...document.querySelectorAll('header button')].find(b => b.getAttribute('title')?.startsWith('목표 바꾸기'))
   const text = btn?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
@@ -38,7 +38,7 @@ describe('TopBar goal dialog', () => {
     const app = mount(TopBar, { target: document.body, props: {
       year: 2026, month: 11, view: view(300, null), backup: null, unmatched: 0,
       onShift: () => {}, onSaveGoal: async () => { throw 'Command set_goals not found' },
-      onImport: () => {}, onUnmatched: () => {}, onSettings: () => {} } })
+      onCompose: () => {}, onUnmatched: () => {}, onSettings: () => {} } })
     flushSync()
     ;([...document.querySelectorAll('header button')].find(b => b.getAttribute('title')?.startsWith('목표 바꾸기')) as HTMLButtonElement).click()
     flushSync()

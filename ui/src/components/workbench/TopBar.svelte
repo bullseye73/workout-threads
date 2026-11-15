@@ -1,11 +1,10 @@
 <script lang="ts">
-  // 상단 한 줄: 달 이동, 종목별 목표 막대(누르면 목표 바꾸기), 종목별 합계, 설정·가져오기.
-  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  // 상단 한 줄: 달 이동, 종목별 목표 막대(누르면 목표 바꾸기), 종목별 합계, 설정·게시물 작성.
+  import SquarePen from '@lucide/svelte/icons/square-pen'
   import ChevronLeft from '@lucide/svelte/icons/chevron-left'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { Button } from '$lib/components/ui/button'
   import * as Dialog from '$lib/components/ui/dialog'
-  import * as DropdownMenu from '$lib/components/ui/dropdown-menu'
   import { Input } from '$lib/components/ui/input'
   import { Label } from '$lib/components/ui/label'
   import { backupStatusText } from '$lib/backup'
@@ -14,10 +13,10 @@
   import { duration, km } from '$lib/format'
   import { parseGoal, sportGoal } from '$lib/workbench'
 
-  let { year, month, view, backup, unmatched, onShift, onSaveGoal, onImport, onUnmatched, onSettings }: {
+  let { year, month, view, backup, unmatched, onShift, onSaveGoal, onCompose, onUnmatched, onSettings }: {
     year: number; month: number; view: MonthView | null; backup: BackupStatusDto | null; unmatched: number
     onShift: (delta: number) => void; onSaveGoal: (cyclingKm: number | null, runningKm: number | null) => Promise<void> | void
-    onImport: (kind: 'files' | 'folder') => void; onUnmatched: () => void; onSettings: () => void
+    onCompose: () => void; onUnmatched: () => void; onSettings: () => void
   } = $props()
 
   // 종목마다: 목표가 있으면 막대, 없으면 거리만. 색만으로 구분하지 않게 종목 이름을 함께 쓴다.
@@ -105,15 +104,7 @@
     {/if}
     {#if unmatched > 0}<Button variant="outline" size="sm" onclick={onUnmatched}>안 붙은 사진 {unmatched}장</Button>{/if}
     <Button variant="ghost" size="sm" onclick={onSettings}>설정</Button>
-    <DropdownMenu.Root>
-      <DropdownMenu.Trigger>
-        {#snippet child({ props })}<Button {...props} size="sm">가져오기 <ChevronDown /></Button>{/snippet}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Content align="end">
-        <DropdownMenu.Item onSelect={() => onImport('files')}>파일 가져오기</DropdownMenu.Item>
-        <DropdownMenu.Item onSelect={() => onImport('folder')}>폴더 가져오기</DropdownMenu.Item>
-      </DropdownMenu.Content>
-    </DropdownMenu.Root>
+    <Button size="sm" onclick={onCompose}><SquarePen />게시물 작성</Button>
   </div>
 </header>
 

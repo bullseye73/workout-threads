@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DayDto } from './bindings/DayDto'
 import { dayItem } from './fixtures'
-import { dayLabel, filterGroups, groupByWeek, parseGoal, sportGoal, itemSummary, pickAfterImport, pickSelection, ribbonDays } from './workbench'
+import { filterGroups, groupByWeek, parseGoal, sportGoal, itemSummary, pickSelection, ribbonDays } from './workbench'
 
 const NOV: DayDto[] = [
   { date: '2026-11-02', items: [dayItem({ activityId: 'r2', sport: 'running', km: 8.1, postStatus: 'ready' })] },
@@ -86,22 +86,7 @@ describe('itemSummary', () => {
   })
 })
 
-describe('dayLabel', () => {
-  it('reads as month and day without leading zeros', () => { expect(dayLabel('2026-11-04')).toBe('11월 4일') })
-})
 
-describe('pickAfterImport', () => {
-  const report = (added: string[]) => ({ addedActivities: added, duplicateFiles: [], failed: [], cardsCreated: 0, unmatchedPhotos: [], skipped: [] })
-  it('opens the new workout on that date', () => {
-    expect(pickAfterImport(report(['x', 'c8']), NOV, '2026-11-08')).toBe('c8')
-  })
-  it('falls back to the first workout of that date', () => {
-    expect(pickAfterImport(report([]), NOV, '2026-11-08')).toBe('c8')
-  })
-  it('is null when the date still has no workout', () => {
-    expect(pickAfterImport(report([]), NOV, '2026-11-20')).toBeNull()
-  })
-})
 
 describe('parseGoal', () => {
   it('reads what a number input gives (number, empty as null, or text)', () => {

@@ -5,12 +5,8 @@
   import type { RibbonDay } from '$lib/workbench'
   import { cn } from '$lib/utils'
 
-  let { days, month, selected, picked = null, onSelect, onPickDate }: {
-    days: RibbonDay[]; month: number; selected: string | null
-    /** 기록 추가 패널을 연 날짜. */
-    picked?: string | null
-    onSelect: (activityId: string) => void
-    onPickDate: (date: string) => void
+  let { days, month, selected, onSelect }: {
+    days: RibbonDay[]; month: number; selected: string | null; onSelect: (activityId: string) => void
   } = $props()
 
   const DOT = { none: 'shadow-[inset_0_0_0_1.5px_var(--on-photo)]', ready: 'bg-wait', published: 'bg-done' } as const
@@ -38,13 +34,10 @@
         <span class={cn('absolute inset-x-0 bottom-0 z-10 h-[3px]', first.sport === 'running' ? 'bg-run' : first.sport === 'cycling' ? 'bg-ride' : 'bg-faint')}></span>
       </button>
     {:else}
-      <!-- 운동 없는 날: 누르면 그 날짜에 기록 추가 -->
-      <button class={cn('group relative h-[54px] rounded-[5px] bg-muted hover:bg-sunken', d.today && 'shadow-[inset_0_0_0_1.5px_var(--foreground)]',
-          picked === d.date && 'outline-2 outline-offset-1 outline-ride')}
-        onclick={() => onPickDate(d.date)} aria-current={picked === d.date} aria-label="{month}월 {d.day}일 기록 추가">
+      <div class={cn('relative h-[54px] rounded-[5px] bg-muted', d.today && 'shadow-[inset_0_0_0_1.5px_var(--foreground)]')}
+        aria-hidden="true">
         <span class={cn('absolute top-0.5 left-1 text-[10px] font-semibold', d.today ? 'text-foreground' : d.weekend ? 'text-muted-foreground' : 'text-faint')}>{d.day}</span>
-        <span class="absolute inset-0 grid place-items-center pt-2 text-base leading-none text-muted-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden="true">+</span>
-      </button>
+      </div>
     {/if}
   {/each}
 </nav>

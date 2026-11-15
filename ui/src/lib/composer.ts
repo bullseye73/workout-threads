@@ -1,11 +1,10 @@
-// 게시물 작성 창 계산: 운동 하나 빼기, 만들기 버튼 문구.
+// 게시물 작성 창 계산: 운동 하나 빼기(제외할 경로), 만들기 버튼 문구.
 import type { UploadPlan } from './bindings/UploadPlan'
 
-/** 그 FIT와, 그 운동에 붙기로 한 사진의 경로를 뺀다. 폴더로 올린 경로는 남는다(다시 읽어 계획). */
-export function removeActivityPaths(plan: UploadPlan, paths: string[], source: string): string[] {
+/** 운동 하나를 뺄 때 제외할 경로: 그 FIT와 그 운동에 붙기로 한 사진 (폴더로 올렸어도 파일 단위로 뺀다). */
+export function activityExclusions(plan: UploadPlan, source: string): string[] {
   const act = plan.newActivities.find(a => a.source === source)
-  const drop = new Set([source, ...(act?.photos.map(p => p.path) ?? [])])
-  return paths.filter(p => !drop.has(p))
+  return [source, ...(act?.photos.map(p => p.path) ?? [])]
 }
 
 export function createLabel(plan: UploadPlan): string {

@@ -55,14 +55,19 @@ fn iso(d: NaiveDate) -> String {
 
 impl Library {
     /// 저장하지 않고 무엇이 만들어질지 돌려준다.
-    pub fn plan_upload(&self, paths: &[PathBuf]) -> Result<UploadPlan> {
-        Ok(self.build_plan(paths)?.view)
+    /// `exclude`: 사용자가 미리보기에서 뺀 파일 (폴더로 올린 것 중 일부를 뺄 수 있게).
+    pub fn plan_upload(&self, paths: &[PathBuf], exclude: &[PathBuf]) -> Result<UploadPlan> {
+        Ok(self.build_plan(paths, exclude)?.view)
     }
 
     /// 미리보기와 같은 계산으로 저장한다: FIT마다 운동·게시물 하나, 사진은 계획된 운동에 붙인다.
     /// 하나가 실패해도 나머지는 계속하고 `failed`에 담는다. 원본 파일은 건드리지 않는다.
-    pub fn commit_upload(&mut self, paths: &[PathBuf]) -> Result<UploadResult> {
-        let plan = self.build_plan(paths)?;
+    pub fn commit_upload(
+        &mut self,
+        paths: &[PathBuf],
+        exclude: &[PathBuf],
+    ) -> Result<UploadResult> {
+        let plan = self.build_plan(paths, exclude)?;
         let mut r = UploadResult {
             excluded: plan.view.excluded.clone(),
             ..Default::default()
@@ -174,8 +179,10 @@ impl Library {
         Ok(made)
     }
 
-    pub(crate) fn build_plan(&self, paths: &[PathBuf]) -> Result<Plan> {
-        let (fits, photos) = expand(paths, true);
+    pub(crate) fn build_plan(&self, paths: &[PathBuf], exclude: &[PathBuf]) -> Result<Plan> {
+        let (mut fits, mut photos) = expand(paths, true);
+        fits.retain(|p| !exclude.contains(p));
+        photos.retain(|p| !exclude.contains(p));
         let mut view = UploadPlan::default();
         let mut new_acts: Vec<(PathBuf, Activity)> = Vec::new();
         let mut seen: HashSet<String> = HashSet::new();

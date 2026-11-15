@@ -36,16 +36,26 @@ async fn run<T: Send + 'static>(
 
 /// 올린 파일로 무엇이 만들어질지 (저장 안 함).
 #[tauri::command]
-async fn plan_upload(lib: State<'_, Shared>, paths: Vec<String>) -> Res<UploadPlan> {
+async fn plan_upload(
+    lib: State<'_, Shared>,
+    paths: Vec<String>,
+    exclude: Vec<String>,
+) -> Res<UploadPlan> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    run(lib, move |l| l.plan_upload(&paths)).await
+    let exclude: Vec<PathBuf> = exclude.into_iter().map(PathBuf::from).collect();
+    run(lib, move |l| l.plan_upload(&paths, &exclude)).await
 }
 
 /// 올린 파일을 보관함에 저장하고 운동마다 게시물을 만든다.
 #[tauri::command]
-async fn commit_upload(lib: State<'_, Shared>, paths: Vec<String>) -> Res<UploadResult> {
+async fn commit_upload(
+    lib: State<'_, Shared>,
+    paths: Vec<String>,
+    exclude: Vec<String>,
+) -> Res<UploadResult> {
     let paths: Vec<PathBuf> = paths.into_iter().map(PathBuf::from).collect();
-    run(lib, move |l| l.commit_upload(&paths)).await
+    let exclude: Vec<PathBuf> = exclude.into_iter().map(PathBuf::from).collect();
+    run(lib, move |l| l.commit_upload(&paths, &exclude)).await
 }
 
 #[tauri::command]
