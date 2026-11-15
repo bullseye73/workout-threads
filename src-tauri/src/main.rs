@@ -303,8 +303,12 @@ fn spawn_backup_loop(app: tauri::AppHandle, shared: Shared) {
 }
 
 #[tauri::command]
-async fn set_goal_km(lib: State<'_, Shared>, km: Option<f64>) -> Res<()> {
-    run(lib, move |l| l.set_goal_km(km)).await
+async fn set_goals(
+    lib: State<'_, Shared>,
+    cycling_km: Option<f64>,
+    running_km: Option<f64>,
+) -> Res<()> {
+    run(lib, move |l| l.set_goals(cycling_km, running_km)).await
 }
 
 fn main() {
@@ -350,7 +354,7 @@ fn main() {
             backup_status,
             backup_now,
             restore_from_drive,
-            set_goal_km
+            set_goals
         ])
         .run(tauri::generate_context!())
         .expect("앱 실행 실패");

@@ -3,7 +3,15 @@ import type { DayDto } from "./DayDto";
 import type { SportSummaryDto } from "./SportSummaryDto";
 import type { WeekDto } from "./WeekDto";
 
-export type MonthView = { year: number, month: number, goalKm: number | null, totalKm: number, totalMovingS: number, running: SportSummaryDto, cycling: SportSummaryDto, otherCount: number, avgHr: number | null, weekly: Array<WeekDto>, 
+export type MonthView = { year: number, month: number, 
+/**
+ * 라이딩 월 목표 (km).
+ */
+goalCyclingKm: number | null, 
+/**
+ * 러닝 월 목표 (km).
+ */
+goalRunningKm: number | null, totalKm: number, totalMovingS: number, running: SportSummaryDto, cycling: SportSummaryDto, otherCount: number, avgHr: number | null, weekly: Array<WeekDto>, 
 /**
  * 운동이 있는 날만, 날짜순.
  */

@@ -9,7 +9,10 @@ use crate::*;
 
 /// 그래프용 시계열 최대 점 수.
 const SERIES_MAX_POINTS: usize = 1000;
-const GOAL_KEY: &str = "monthly_goal_km";
+/// 예전 합계 목표 (처음 읽을 때 라이딩 목표로 옮긴다).
+const OLD_GOAL_KEY: &str = "monthly_goal_km";
+const GOAL_CYCLING_KEY: &str = "goal_cycling_km";
+const GOAL_RUNNING_KEY: &str = "goal_running_km";
 
 fn sport_summary(s: &SportStats, sport: Sport) -> SportSummaryDto {
     let has = s.count > 0 && s.distance_m > 0.0 && s.moving_s > 0.0;
@@ -95,7 +98,8 @@ impl Library {
         Ok(MonthView {
             year,
             month,
-            goal_km: self.goal_km()?,
+            goal_cycling_km: self.goal(GOAL_CYCLING_KEY)?,
+            goal_running_km: self.goal(GOAL_RUNNING_KEY)?,
             total_km: st.total_distance_m / 1000.0,
             total_moving_s: st.total_moving_s,
             running: sport_summary(&st.running, Sport::Running),
@@ -165,16 +169,34 @@ impl Library {
         })
     }
 
-    pub fn set_goal_km(&mut self, km: Option<f64>) -> Result<()> {
-        let v = km
-            .filter(|k| k.is_finite() && *k > 0.0)
-            .map(|k| k.to_string());
-        self.store.set_setting(GOAL_KEY, v.as_deref())?;
+    /// 라이딩·러닝 월 목표. 0 이하·숫자 아님은 목표 없음.
+    pub fn set_goals(&mut self, cycling_km: Option<f64>, running_km: Option<f64>) -> Result<()> {
+        let valid = |k: Option<f64>| {
+            k.filter(|k| k.is_finite() && *k > 0.0)
+                .map(|k| k.to_string())
+        };
+        self.store
+            .set_setting(GOAL_CYCLING_KEY, valid(cycling_km).as_deref())?;
+        self.store
+            .set_setting(GOAL_RUNNING_KEY, valid(running_km).as_deref())?;
+        self.store.set_setting(OLD_GOAL_KEY, None)?;
         Ok(())
     }
 
-    fn goal_km(&self) -> Result<Option<f64>> {
-        Ok(self.store.setting(GOAL_KEY)?.and_then(|v| v.parse().ok()))
+    fn goal(&self, key: &str) -> Result<Option<f64>> {
+        self.migrate_old_goal()?;
+        Ok(self.store.setting(key)?.and_then(|v| v.parse().ok()))
+    }
+
+    /// 예전 합계 목표는 사실상 라이딩 목표로 쓰였으므로 라이딩 목표로 옮긴다 (한 번만).
+    fn migrate_old_goal(&self) -> Result<()> {
+        if let Some(old) = self.store.setting(OLD_GOAL_KEY)? {
+            if self.store.setting(GOAL_CYCLING_KEY)?.is_none() {
+                self.store.set_setting(GOAL_CYCLING_KEY, Some(&old))?;
+            }
+            self.store.set_setting(OLD_GOAL_KEY, None)?;
+        }
+        Ok(())
     }
 
     pub(crate) fn post_status(&self, activity_id: &str) -> Result<PostStatus> {

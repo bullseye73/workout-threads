@@ -25,7 +25,7 @@ fn empty_month_is_clean() {
     let (_t, lib) = temp_library();
     let v = lib.month_view(2026, 12).unwrap();
     assert_eq!(v.total_km, 0.0);
-    assert!(v.goal_km.is_none());
+    assert!(v.goal_cycling_km.is_none() && v.goal_running_km.is_none());
     assert!(v.avg_hr.is_none());
     assert!(v.running.avg_pace.is_none() && v.cycling.avg_speed_kmh.is_none());
     assert!(v.days.is_empty());
@@ -33,12 +33,45 @@ fn empty_month_is_clean() {
 }
 
 #[test]
-fn goal_is_reported() {
+fn goals_are_reported_per_sport() {
     let (_t, mut lib) = temp_library();
-    lib.set_goal_km(Some(300.0)).unwrap();
-    assert_eq!(lib.month_view(2026, 10).unwrap().goal_km, Some(300.0));
-    lib.set_goal_km(None).unwrap();
-    assert_eq!(lib.month_view(2026, 10).unwrap().goal_km, None);
+    lib.set_goals(Some(300.0), Some(50.0)).unwrap();
+    let v = lib.month_view(2026, 10).unwrap();
+    assert_eq!(
+        (v.goal_cycling_km, v.goal_running_km),
+        (Some(300.0), Some(50.0))
+    );
+    lib.set_goals(None, Some(40.0)).unwrap();
+    let v = lib.month_view(2026, 10).unwrap();
+    assert_eq!((v.goal_cycling_km, v.goal_running_km), (None, Some(40.0)));
+}
+
+#[test]
+fn old_total_goal_becomes_cycling_goal() {
+    let (_t, lib) = temp_library();
+    lib.store_for_tests()
+        .set_setting("monthly_goal_km", Some("200"))
+        .unwrap();
+    let v = lib.month_view(2026, 10).unwrap();
+    assert_eq!((v.goal_cycling_km, v.goal_running_km), (Some(200.0), None));
+    assert_eq!(
+        lib.store_for_tests().setting("monthly_goal_km").unwrap(),
+        None
+    );
+    assert_eq!(
+        lib.month_view(2026, 11).unwrap().goal_cycling_km,
+        Some(200.0)
+    );
+}
+
+#[test]
+fn bad_goal_values_mean_no_goal() {
+    let (_t, mut lib) = temp_library();
+    for bad in [0.0, -5.0, f64::NAN] {
+        lib.set_goals(Some(bad), Some(bad)).unwrap();
+        let v = lib.month_view(2026, 10).unwrap();
+        assert_eq!((v.goal_cycling_km, v.goal_running_km), (None, None));
+    }
 }
 
 #[test]

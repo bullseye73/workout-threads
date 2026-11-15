@@ -133,7 +133,10 @@ pub struct DayDto {
 pub struct MonthView {
     pub year: i32,
     pub month: u32,
-    pub goal_km: Option<f64>,
+    /// 라이딩 월 목표 (km).
+    pub goal_cycling_km: Option<f64>,
+    /// 러닝 월 목표 (km).
+    pub goal_running_km: Option<f64>,
     pub total_km: f64,
     pub total_moving_s: f64,
     pub running: SportSummaryDto,

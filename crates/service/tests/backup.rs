@@ -297,10 +297,13 @@ fn corrupt_backup_db_leaves_library_usable() {
     assert!(b.restore_from_drive().is_err());
     assert_eq!(count_files(&b.root().join("files")), 0);
     assert!(b.backup_status().unwrap().can_restore);
-    b.set_goal_km(Some(100.0)).unwrap();
+    b.set_goals(Some(100.0), None).unwrap();
     drop(b);
     let reopened = library_with_drive(&t.path().join("b"), drive);
-    assert_eq!(reopened.month_view(2026, 10).unwrap().goal_km, Some(100.0)); // 디스크 DB에 저장됐음
+    assert_eq!(
+        reopened.month_view(2026, 10).unwrap().goal_cycling_km,
+        Some(100.0)
+    ); // 디스크 DB에 저장됐음
 }
 
 /// I2: 업로드 뒤 기록 전에 앱이 꺼져도 다음 백업에서 중복이 생기지 않는다.
@@ -325,7 +328,7 @@ fn second_backup_job_is_refused_while_running() {
     let t = tempfile::tempdir().unwrap();
     let drive = Arc::new(FakeDrive::default());
     let mut lib = library_with_drive(&t.path().join("lib"), drive);
-    lib.set_goal_km(Some(1.0)).unwrap(); // 빈 라이브러리가 아니게: 설정만으로는 비어 있음 → 파일 하나 추가
+    lib.set_goals(Some(1.0), None).unwrap(); // 빈 라이브러리가 아니게: 설정만으로는 비어 있음 → 파일 하나 추가
     std::fs::create_dir_all(lib.root().join("files/x")).unwrap();
     std::fs::write(lib.root().join("files/x/a.txt"), b"a").unwrap();
     lib.store_for_tests()
