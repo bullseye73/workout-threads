@@ -94,8 +94,8 @@
     const d = new Date(year, month - 1 + delta, 1)
     onMonth(d.getFullYear(), d.getMonth() + 1)
   }
-  async function saveGoal(km: number | null) {
-    await api.setGoalKm(km)
+  async function saveGoal(cyclingKm: number | null, runningKm: number | null) {
+    await api.setGoals(cyclingKm, runningKm)
     view = await api.monthView(year, month)
   }
   async function refresh() {

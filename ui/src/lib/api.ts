@@ -47,7 +47,7 @@ export interface Api {
   restoreFromDrive(): Promise<BackupStatusDto>
   /** 백그라운드 백업이 끝날 때마다 불린다. 해제 함수를 돌려준다. */
   onBackupStatus(cb: (s: BackupStatusDto) => void): Promise<() => void>
-  setGoalKm(km: number | null): Promise<void>
+  setGoals(cyclingKm: number | null, runningKm: number | null): Promise<void>
   fileUrl(absPath: string): string
   copyText(text: string): Promise<void>
   openFolder(absPath: string): Promise<void>
@@ -98,7 +98,7 @@ export const tauriApi: Api = {
     const { listen } = await import('@tauri-apps/api/event')
     return listen<BackupStatusDto>('backup-status', e => cb(e.payload))
   },
-  setGoalKm: km => invoke('set_goal_km', { km }),
+  setGoals: (cyclingKm, runningKm) => invoke('set_goals', { cyclingKm, runningKm }),
   fileUrl: p => {
     // convertFileSrc는 동기 함수라 전역 내부 객체를 직접 쓴다 (@tauri-apps/api/core와 같은 구현).
     const w = window as unknown as { __TAURI_INTERNALS__: { convertFileSrc(p: string, proto: string): string } }
@@ -154,7 +154,7 @@ export const mockApi: Api = {
   markPublished: async id => { const p = { ...mockPost(id), status: 'published' as const }; mockPosts.set(id, p); return delay(p) },
   assignPhoto: async (photoId) => delay({ id: photoId, fileName: 'mock.jpg', path: '', cardPath: null, takenAt: null,
     kmMark: null, lat: null, lon: null }),
-  setGoalKm: async km => { mockGoal.value = km; await delay(undefined) },
+  setGoals: async (cyclingKm, runningKm) => { mockGoal.cycling = cyclingKm; mockGoal.running = runningKm; await delay(undefined) },
   fileUrl: p => p,
   copyText: async text => { await navigator.clipboard?.writeText(text).catch(() => undefined) },
   openFolder: async () => undefined,

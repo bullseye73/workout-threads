@@ -60,7 +60,7 @@ export function mockMonth(year: number, month: number): MonthView {
   const hrActs = acts.filter(a => a.hr !== null)
   const hrSecs = hrActs.reduce((t, a) => t + a.movingS, 0)
   return {
-    year, month, goalKm: mockGoal.value,
+    year, month, goalCyclingKm: mockGoal.cycling, goalRunningKm: mockGoal.running,
     totalKm: acts.reduce((t, a) => t + a.km, 0), totalMovingS: acts.reduce((t, a) => t + a.movingS, 0),
     running: sum('running'), cycling: sum('cycling'), otherCount: 0,
     avgHr: hrSecs > 0 ? hrActs.reduce((t, a) => t + a.hr! * a.movingS, 0) / hrSecs : null,
@@ -73,7 +73,7 @@ export function mockMonth(year: number, month: number): MonthView {
       coverCard: null, cardCount: 0 }] })),
   }
 }
-export const mockGoal: { value: number | null } = { value: 300 }
+export const mockGoal: { cycling: number | null; running: number | null } = { cycling: 300, running: 50 }
 
 export function mockDetail(id: string): ActivityDetail {
   const a = mockActivities.find(x => x.id === id) ?? mockActivities[0]

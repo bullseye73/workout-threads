@@ -2,7 +2,6 @@
 import type { DayDto } from './bindings/DayDto'
 import type { DayItemDto } from './bindings/DayItemDto'
 import type { ImportReport } from './bindings/ImportReport'
-import type { MonthView } from './bindings/MonthView'
 
 export type Item = DayItemDto & { date: string }
 export type RibbonDay = { day: number; date: string; weekend: boolean; today: boolean; items: Item[] }
@@ -10,7 +9,7 @@ export type WeekGroup = { weekStart: string; label: string; km: number; items: I
 export type ListFilter = 'all' | 'ready' | 'published'
 /** 날짜를 골라 등록한 결과 (n은 같은 결과를 다시 알리기 위한 일련번호). */
 export type DateImported = { date: string; report: ImportReport; n: number }
-export type GoalProgress = { rideRatio: number; runRatio: number; paceRatio: number | null; perDayKm: number | null }
+export type SportGoal = { ratio: number; paceRatio: number; perDayKm: number | null }
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const isoOf = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -66,18 +65,17 @@ export function pickSelection(groups: WeekGroup[], current: string | null): stri
   return items[0]?.activityId ?? null
 }
 
-export function goalProgress(v: MonthView, today: Date): GoalProgress {
-  if (!v.goalKm) return { rideRatio: 0, runRatio: 0, paceRatio: null, perDayKm: null }
-  const scale = Math.min(1, v.goalKm / Math.max(v.cycling.km + v.running.km, 1e-9))
-  const total = daysIn(v.year, v.month)
-  const monthKey = v.year * 12 + v.month
+/** 한 종목의 월 목표 진행: 채운 비율, 오늘까지 기준선(어제까지 지난 날수/그 달 날수), 남은 날 하루 거리. 목표 없으면 null. */
+export function sportGoal(doneKm: number, goalKm: number | null, year: number, month: number, today: Date): SportGoal | null {
+  if (!goalKm) return null
+  const total = daysIn(year, month)
+  const monthKey = year * 12 + month
   const todayKey = today.getFullYear() * 12 + today.getMonth() + 1
   const gone = monthKey < todayKey ? total : monthKey > todayKey ? 0 : today.getDate() - 1
   const left = total - gone
-  const remaining = v.goalKm - v.totalKm
+  const remaining = goalKm - doneKm
   return {
-    rideRatio: (v.cycling.km / v.goalKm) * scale,
-    runRatio: (v.running.km / v.goalKm) * scale,
+    ratio: Math.min(1, Math.max(0, doneKm / goalKm)),
     paceRatio: gone / total,
     perDayKm: left > 0 && remaining > 0 ? remaining / left : null,
   }
@@ -105,4 +103,11 @@ export function dayLabel(iso: string): string {
 export function pickAfterImport(report: ImportReport, days: DayDto[], date: string): string | null {
   const items = days.find(d => d.date === date)?.items ?? []
   return items.find(i => report.addedActivities.includes(i.activityId))?.activityId ?? items[0]?.activityId ?? null
+}
+
+/** 목표 입력 값 → km. 숫자 입력칸은 숫자(비우면 null)를 주므로 글자·숫자 모두 받는다. 0 이하·숫자 아님은 목표 없음. */
+export function parseGoal(v: unknown): number | null {
+  if (v === null || v === undefined || (typeof v === 'string' && !v.trim())) return null
+  const n = Number(v)
+  return Number.isFinite(n) && n > 0 ? n : null
 }

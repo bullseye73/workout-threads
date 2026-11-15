@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DayDto } from './bindings/DayDto'
-import type { MonthView } from './bindings/MonthView'
 import { dayItem } from './fixtures'
-import { dayLabel, filterGroups, goalProgress, groupByWeek, itemSummary, pickAfterImport, pickSelection, ribbonDays } from './workbench'
+import { dayLabel, filterGroups, groupByWeek, parseGoal, sportGoal, itemSummary, pickAfterImport, pickSelection, ribbonDays } from './workbench'
 
 const NOV: DayDto[] = [
   { date: '2026-11-02', items: [dayItem({ activityId: 'r2', sport: 'running', km: 8.1, postStatus: 'ready' })] },
@@ -51,31 +50,27 @@ describe('pickSelection', () => {
   it('is null for an empty month', () => { expect(pickSelection([], 'c3')).toBeNull() })
 })
 
-describe('goalProgress', () => {
-  const sport = (km: number) => ({ count: 1, km, movingS: 0, avgPace: null, avgSpeedKmh: null })
-  const view = (goalKm: number | null, month = 11): MonthView => ({ year: 2026, month, goalKm, totalKm: 110.1, totalMovingS: 0,
-    running: sport(8.1), cycling: sport(102), otherCount: 0, avgHr: null, weekly: [], days: [] })
+describe('sportGoal', () => {
   const today = new Date(2026, 10, 14)
-  it('splits the bar by sport and paces against days gone by', () => {
-    const p = goalProgress(view(300), today)
-    expect(p.rideRatio).toBeCloseTo(102 / 300)
-    expect(p.runRatio).toBeCloseTo(8.1 / 300)
-    expect(p.paceRatio).toBeCloseTo(13 / 30)
-    expect(p.perDayKm).toBeCloseTo((300 - 110.1) / 17)
+  it('fills toward the goal and paces against days gone by', () => {
+    const g = sportGoal(102, 300, 2026, 11, today)!
+    expect(g.ratio).toBeCloseTo(102 / 300)
+    expect(g.paceRatio).toBeCloseTo(13 / 30)
+    expect(g.perDayKm).toBeCloseTo((300 - 102) / 17)
   })
-  it('has no pace without a goal', () => {
-    const p = goalProgress(view(null), today)
-    expect([p.rideRatio, p.runRatio, p.paceRatio, p.perDayKm]).toEqual([0, 0, null, null])
+  it('is null without a goal', () => { expect(sportGoal(10, null, 2026, 11, today)).toBeNull() })
+  it('caps at a full bar once the goal is passed', () => {
+    const g = sportGoal(320, 300, 2026, 11, today)!
+    expect(g.ratio).toBe(1)
+    expect(g.perDayKm).toBeNull()
   })
   it('a past month is fully paced and needs nothing per day', () => {
-    const p = goalProgress(view(300, 10), today)
-    expect(p.paceRatio).toBe(1)
-    expect(p.perDayKm).toBeNull()
+    const g = sportGoal(100, 300, 2026, 10, today)!
+    expect(g.paceRatio).toBe(1)
+    expect(g.perDayKm).toBeNull()
   })
-  it('scales down when over the goal', () => {
-    const p = goalProgress(view(100), today)
-    expect(p.rideRatio + p.runRatio).toBeCloseTo(1)
-    expect(p.perDayKm).toBeNull()
+  it('a future month has not started', () => {
+    expect(sportGoal(0, 300, 2026, 12, today)!.paceRatio).toBe(0)
   })
 })
 
@@ -105,5 +100,14 @@ describe('pickAfterImport', () => {
   })
   it('is null when the date still has no workout', () => {
     expect(pickAfterImport(report([]), NOV, '2026-11-20')).toBeNull()
+  })
+})
+
+describe('parseGoal', () => {
+  it('reads what a number input gives (number, empty as null, or text)', () => {
+    expect([parseGoal(300), parseGoal('50'), parseGoal(null), parseGoal(''), parseGoal(undefined)]).toEqual([300, 50, null, null, null])
+  })
+  it('zero, negative and not-a-number mean no goal', () => {
+    expect([parseGoal(0), parseGoal(-3), parseGoal(NaN), parseGoal('abc')]).toEqual([null, null, null, null])
   })
 })

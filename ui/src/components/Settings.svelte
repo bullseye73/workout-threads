@@ -1,5 +1,6 @@
 <script lang="ts">
   // 설정: 글 다듬기 AI(Gemini/Claude)와 키(키 값은 다시 보여 주지 않음)·모델, 카드 경로선, 드라이브 백업.
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte'
   import { Button } from '$lib/components/ui/button'
   import * as Dialog from '$lib/components/ui/dialog'
   import { api } from '$lib/api'
@@ -81,6 +82,11 @@
 <Dialog.Root open onOpenChange={o => { if (!o) onClose() }}>
 <Dialog.Content class="max-h-[84vh] overflow-auto sm:max-w-lg">
   <Dialog.Header><Dialog.Title>설정</Dialog.Title></Dialog.Header>
+
+  <section>
+    <h3>화면 테마</h3>
+    <ThemeToggle />
+  </section>
 
   <section>
     <h3>글 다듬기 AI</h3>
