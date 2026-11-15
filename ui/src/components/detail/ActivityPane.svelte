@@ -13,6 +13,7 @@
   import DistanceProfile from './DistanceProfile.svelte'
   import MetricStrip from './MetricStrip.svelte'
   import PhotoStrip from './PhotoStrip.svelte'
+  import StoredFiles from './StoredFiles.svelte'
   import SplitsChart from './SplitsChart.svelte'
   import PostTab from './PostTab.svelte'
   import { ask } from '$lib/confirm.svelte'
@@ -105,6 +106,7 @@
       </div>
       <DistanceProfile {series} {pins} {highlight} {activePin} onHover={i => { highlight = i; activePin = null }} onFocusPin={focusPin} />
       <SplitsChart splits={detail.splits} totalKm={detail.metrics.distanceKm} sport={detail.sport} onFocusKm={focusKm} />
+      <StoredFiles {detail} />
     </Tabs.Content>
 
     <Tabs.Content value="post">
