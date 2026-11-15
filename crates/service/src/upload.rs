@@ -73,11 +73,15 @@ impl Library {
             ..Default::default()
         };
         let mut ready: HashMap<String, Activity> = HashMap::new();
+        let inbox_dir = self.garmin_inbox_dir();
         for (fit, a) in &plan.new_acts {
             match self.import_fit(fit) {
                 Ok(_) => {
                     r.created.push(a.header.id.clone());
                     ready.insert(a.header.id.clone(), a.clone());
+                    if fit.starts_with(&inbox_dir) {
+                        let _ = std::fs::remove_file(fit);
+                    }
                 }
                 Err(e) => r.failed.push(ImportIssue {
                     file: file_name(fit),
@@ -142,6 +146,14 @@ impl Library {
                     reason: format!("글 작성 실패: {e}"),
                 });
             }
+        }
+        let mut months = BTreeSet::new();
+        for a in ready.values() {
+            let d = a.header.start_local().date();
+            months.insert((d.year(), d.month()));
+        }
+        for (y, m) in months {
+            self.maybe_sync_bullsnote_month(y, m);
         }
         Ok(r)
     }

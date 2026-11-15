@@ -12,6 +12,7 @@ ts-rs = "12.0.1"
 workout-card = { version = "0.1.0", path = "../card" }
 workout-core = { version = "0.1.0", path = "../core" }
 workout-enrich = { version = "0.1.0", path = "../enrich" }
+workout-garmin = { version = "0.1.0", path = "../garmin" }
 workout-gdrive = { version = "0.1.0", path = "../gdrive" }
 workout-post = { version = "0.1.0", path = "../post" }
 workout-store = { version = "0.1.0", path = "../store" }

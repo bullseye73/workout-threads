@@ -1,10 +1,12 @@
 //! 데스크톱 앱이 쓰는 라이브러리 파사드: 가져오기, 조회, 게시 준비.
 //! Tauri와 무관하게 테스트할 수 있다.
 pub mod backup;
+pub mod bullsnote;
 mod dto;
 mod enrich;
 pub use enrich::{EnrichFetched, EnrichJob, RefineJob};
 mod files;
+pub mod garmin;
 mod import;
 mod posts;
 pub mod secrets;

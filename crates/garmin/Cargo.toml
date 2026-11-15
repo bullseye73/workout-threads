@@ -1,0 +1,15 @@
+[package]
+name = "workout-garmin"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+flate2 = "1.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+thiserror = "2.0.21"
+workout-core = { version = "0.1.0", path = "../core" }
+workout-enrich = { version = "0.1.0", path = "../enrich" }
+
+[dev-dependencies]
+workout-enrich = { path = "../enrich", features = ["mock"] }

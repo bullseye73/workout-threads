@@ -446,6 +446,8 @@ impl Library {
     pub fn settings(&self) -> Result<SettingsDto> {
         Ok(SettingsDto {
             card_route_trim: self.card_trim_m() > 0.0,
+            garmin_connected: self.has_garmin_key(),
+            garmin_auto_check: self.garmin_auto_check(),
         })
     }
 

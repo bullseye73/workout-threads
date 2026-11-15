@@ -20,6 +20,19 @@
   // 게시물 작성 창: 열려 있을 때 끌어다 놓은 파일은 창으로 보낸다.
   let composing = $state(false)
   let incoming = $state<{ paths: string[]; n: number } | null>(null)
+  let preloadedGarmin = $state<string[]>([])
+  let startupChecked = false
+  $effect(() => {
+    if (startupChecked) return
+    startupChecked = true
+    api.settings().then(s => {
+      if (s.garminConnected && s.garminAutoCheck) {
+        api.garminNewSinceLastCheck().then(r => {
+          if (r.paths.length) preloadedGarmin = r.paths
+        }).catch(() => undefined)
+      }
+    }).catch(() => undefined)
+  })
   function compose(paths: string[] = []) {
     incoming = paths.length ? { paths, n: (incoming?.n ?? 0) + 1 } : null
     composing = true
@@ -78,8 +91,9 @@
   {#if showSettings}<Settings onClose={() => { showSettings = false; reloadKey++ }} />{/if}
   {#if report}<ImportPanel {report} title={panelTitle} showSummary={false} onClose={() => { report = null; reloadKey++ }} />{/if}
   {#if composing}
-    <Composer {incoming} onClose={() => { composing = false; incoming = null }} onOpenActivity={openActivity}
-      onCreated={r => { reloadKey++; void enrichNew(r.created) }} />
+    <Composer {incoming} {preloadedGarmin} onClose={() => { composing = false; incoming = null; preloadedGarmin = [] }} onOpenActivity={openActivity}
+      onOpenSettings={() => { composing = false; showSettings = true }}
+      onCreated={r => { reloadKey++; preloadedGarmin = []; void enrichNew(r.created) }} />
   {/if}
 </main>
 

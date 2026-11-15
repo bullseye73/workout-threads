@@ -10,6 +10,9 @@ import type { RefineDto } from './bindings/RefineDto'
 import type { SettingsDto } from './bindings/SettingsDto'
 import type { WeatherDto } from './bindings/WeatherDto'
 import type { BackupStatusDto } from './bindings/BackupStatusDto'
+import type { BullsNoteStatusDto } from './bindings/BullsNoteStatusDto'
+import type { GarminActivityDto } from './bindings/GarminActivityDto'
+import type { GarminFetchResult } from './bindings/GarminFetchResult'
 import type { GoogleClientDto } from './bindings/GoogleClientDto'
 import { mockDetail, mockGoal, mockMonth, mockPost, mockPosts } from './mock'
 
@@ -54,6 +57,16 @@ export interface Api {
   openFolder(absPath: string): Promise<void>
   /** 파일 여러 개 또는 폴더 여러 개를 고른다 (macOS는 한 창에서 둘을 함께 고를 수 없다). */
   pickImport(kind: 'files' | 'folder'): Promise<string[]>
+  pickDirectory(): Promise<string | null>
+  setGarminKey(key: string | null): Promise<void>
+  testGarmin(): Promise<number>
+  setGarminAutoCheck(on: boolean): Promise<void>
+  garminActivities(from: string, to: string): Promise<GarminActivityDto[]>
+  fetchGarminFits(ids: string[]): Promise<GarminFetchResult>
+  garminNewSinceLastCheck(): Promise<GarminFetchResult>
+  bullsnoteStatus(): Promise<BullsNoteStatusDto>
+  setBullsnoteSettings(enabled: boolean, vaultPath: string | null, folderName: string | null): Promise<BullsNoteStatusDto>
+  syncBullsnoteNow(year: number, month: number): Promise<BullsNoteStatusDto>
 }
 
 export function isTauri(): boolean {
@@ -115,6 +128,21 @@ export const tauriApi: Api = {
           filters: [{ name: '운동 기록·사진', extensions: ['fit', 'FIT', 'jpg', 'jpeg', 'png', 'JPG', 'JPEG', 'PNG'] }] })
     return picked === null ? [] : Array.isArray(picked) ? picked : [picked]
   },
+  pickDirectory: async () => {
+    const { open } = await import('@tauri-apps/plugin-dialog')
+    const picked = await open({ multiple: false, directory: true })
+    return typeof picked === 'string' ? picked : null
+  },
+  setGarminKey: key => invoke('set_garmin_key', { key }),
+  testGarmin: () => invoke('test_garmin'),
+  setGarminAutoCheck: on => invoke('set_garmin_auto_check', { on }),
+  garminActivities: (from, to) => invoke('garmin_activities', { from, to }),
+  fetchGarminFits: ids => invoke('fetch_garmin_fits', { ids }),
+  garminNewSinceLastCheck: () => invoke('garmin_new_since_last_check'),
+  bullsnoteStatus: () => invoke('bullsnote_status'),
+  setBullsnoteSettings: (enabled, vaultPath, folderName) =>
+    invoke('set_bullsnote_settings', { enabled, vaultPath, folderName }),
+  syncBullsnoteNow: (year, month) => invoke('sync_bullsnote_now', { year, month }),
 }
 
 const mockBackup: { client: GoogleClientDto | null; status: BackupStatusDto } = {
@@ -133,7 +161,18 @@ function mockRefineStatus(): RefineStatusDto {
   return { provider: cur.id, label: cur.label, company: cur.company, hasKey: cur.hasKey, model: cur.model,
     providers: mockRefine.providers.map(p => ({ ...p })) }
 }
-const mockSettings = { cardRouteTrim: false }
+const mockSettings: SettingsDto = { cardRouteTrim: false, garminConnected: false, garminAutoCheck: false }
+let mockBullsnote: BullsNoteStatusDto = {
+  enabled: false,
+  vaultPath: '~/Documents/BullsNote',
+  folderName: '02_Areas',
+  lastSuccess: null,
+  lastError: null,
+}
+const mockGarminList: GarminActivityDto[] = [
+  { id: 'g1', name: '한강 아침 러닝', sport: 'running', date: '2026-11-15', startTime: '07:10', km: 8.2, durationS: 2700, alreadyImported: false },
+  { id: 'g2', name: '남산 라이딩', sport: 'cycling', date: '2026-11-14', startTime: '09:00', km: 42.5, durationS: 5400, alreadyImported: true },
+]
 
 const delay = <T>(v: T) => new Promise<T>(r => setTimeout(() => r(v), 50))
 
@@ -200,6 +239,27 @@ export const mockApi: Api = {
   restoreFromDrive: async () => delay({ ...mockBackup.status, canRestore: false }),
   onBackupStatus: async () => () => undefined,
   pickImport: async kind => (kind === 'folder' ? ['/mock/20261025'] : ['/mock/20261025/a.fit']),
+  pickDirectory: async () => '/mock/BullsNote',
+  setGarminKey: async key => { mockSettings.garminConnected = !!key; await delay(undefined) },
+  testGarmin: async () => delay(mockGarminList.length),
+  setGarminAutoCheck: async on => { mockSettings.garminAutoCheck = on; await delay(undefined) },
+  garminActivities: async () => delay(mockGarminList.map(a => ({ ...a }))),
+  fetchGarminFits: async ids => delay({ paths: ids.map(id => `/mock/garmin-inbox/${id}.fit`), failed: [] }),
+  garminNewSinceLastCheck: async () => delay({ paths: ['/mock/garmin-inbox/g1.fit'], failed: [] }),
+  bullsnoteStatus: async () => delay({ ...mockBullsnote }),
+  setBullsnoteSettings: async (enabled, vaultPath, folderName) => {
+    mockBullsnote = {
+      ...mockBullsnote,
+      enabled,
+      vaultPath: vaultPath || mockBullsnote.vaultPath,
+      folderName: folderName || mockBullsnote.folderName,
+    }
+    return delay({ ...mockBullsnote })
+  },
+  syncBullsnoteNow: async () => {
+    mockBullsnote = { ...mockBullsnote, lastSuccess: new Date().toISOString(), lastError: null }
+    return delay({ ...mockBullsnote })
+  },
 }
 
 export const api: Api = isTauri() ? tauriApi : mockApi

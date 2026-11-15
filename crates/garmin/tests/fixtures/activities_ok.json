@@ -1,0 +1,26 @@
+[
+  {
+    "activityId": 1001,
+    "activityName": "한강 아침 러닝",
+    "startTimeGMT": "2026-11-15 00:10:00",
+    "startTimeLocal": "2026-11-15 09:10:00",
+    "activityType": {
+      "typeId": 1,
+      "typeKey": "running"
+    },
+    "distance": 10250.5,
+    "duration": 3120.0
+  },
+  {
+    "activityId": 1002,
+    "activityName": "남산 라이딩",
+    "startTimeGMT": "2026-11-14 01:30:00",
+    "startTimeLocal": "2026-11-14 10:30:00",
+    "activityType": {
+      "typeId": 2,
+      "typeKey": "cycling"
+    },
+    "distance": 42100.0,
+    "duration": 5400.0
+  }
+]

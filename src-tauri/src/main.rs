@@ -316,6 +316,82 @@ async fn set_goals(
     run(lib, move |l| l.set_goals(cycling_km, running_km)).await
 }
 
+#[tauri::command]
+async fn set_garmin_key(lib: State<'_, Shared>, key: Option<String>) -> Res<()> {
+    run(lib, move |l| l.set_garmin_key(key)).await
+}
+
+#[tauri::command]
+async fn test_garmin(lib: State<'_, Shared>) -> Res<u32> {
+    run(lib, |l| l.test_garmin()).await
+}
+
+#[tauri::command]
+async fn set_garmin_auto_check(lib: State<'_, Shared>, on: bool) -> Res<()> {
+    run(lib, move |l| l.set_garmin_auto_check(on)).await
+}
+
+#[tauri::command]
+async fn garmin_activities(
+    lib: State<'_, Shared>,
+    from: String,
+    to: String,
+) -> Res<Vec<GarminActivityDto>> {
+    use workout_service::chrono_utc::NaiveDate;
+    let from = NaiveDate::parse_from_str(&from, "%Y-%m-%d").map_err(|e| e.to_string())?;
+    let to = NaiveDate::parse_from_str(&to, "%Y-%m-%d").map_err(|e| e.to_string())?;
+    run(lib, move |l| l.garmin_activities(from, to)).await
+}
+
+#[tauri::command]
+async fn fetch_garmin_fits(lib: State<'_, Shared>, ids: Vec<String>) -> Res<GarminFetchResult> {
+    run(lib, move |l| l.fetch_garmin_fits(ids)).await
+}
+
+#[tauri::command]
+async fn garmin_new_since_last_check(lib: State<'_, Shared>) -> Res<GarminFetchResult> {
+    run(lib, |l| l.garmin_new_since_last_check()).await
+}
+
+#[tauri::command]
+async fn bullsnote_status(lib: State<'_, Shared>) -> Res<BullsNoteStatusDto> {
+    run(lib, |l| l.bullsnote_status()).await
+}
+
+#[tauri::command]
+async fn set_bullsnote_settings(
+    lib: State<'_, Shared>,
+    enabled: bool,
+    vault_path: Option<String>,
+    folder_name: Option<String>,
+) -> Res<BullsNoteStatusDto> {
+    run(lib, move |l| {
+        l.set_bullsnote_settings(enabled, vault_path, folder_name)
+    })
+    .await
+}
+
+#[tauri::command]
+async fn sync_bullsnote_now(
+    lib: State<'_, Shared>,
+    year: i32,
+    month: u32,
+) -> Res<BullsNoteStatusDto> {
+    run(lib, move |l| l.sync_bullsnote_month(year, month)).await
+}
+
+fn spawn_bullsnote_startup(shared: Shared) {
+    use workout_service::chrono_utc::Datelike;
+    std::thread::spawn(move || {
+        if let Ok(mut guard) = shared.lock()
+            && guard.bullsnote_status().map(|s| s.enabled).unwrap_or(false)
+        {
+            let now = chrono_now().date_naive();
+            let _ = guard.sync_bullsnote_month(now.year(), now.month());
+        }
+    });
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -326,6 +402,7 @@ fn main() {
             let lib = Library::open(&root).map_err(|e| e.to_string())?;
             let shared: Shared = Arc::new(Mutex::new(lib));
             app.manage::<Shared>(shared.clone());
+            spawn_bullsnote_startup(shared.clone());
             spawn_backup_loop(app.handle().clone(), shared);
             Ok(())
         })
@@ -359,7 +436,16 @@ fn main() {
             backup_status,
             backup_now,
             restore_from_drive,
-            set_goals
+            set_goals,
+            set_garmin_key,
+            test_garmin,
+            set_garmin_auto_check,
+            garmin_activities,
+            fetch_garmin_fits,
+            garmin_new_since_last_check,
+            bullsnote_status,
+            set_bullsnote_settings,
+            sync_bullsnote_now
         ])
         .run(tauri::generate_context!())
         .expect("앱 실행 실패");

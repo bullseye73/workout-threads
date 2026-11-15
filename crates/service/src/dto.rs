@@ -291,6 +291,43 @@ pub struct RefineStatusDto {
 pub struct SettingsDto {
     /// 카드 경로선에서 출발·도착 500m를 가린다.
     pub card_route_trim: bool,
+    pub garmin_connected: bool,
+    pub garmin_auto_check: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GarminActivityDto {
+    pub id: String,
+    pub name: String,
+    pub sport: SportKind,
+    /// 현지 날짜 YYYY-MM-DD.
+    pub date: String,
+    /// 현지 시작 시각 HH:MM.
+    pub start_time: String,
+    pub km: f64,
+    pub duration_s: f64,
+    pub already_imported: bool,
+}
+
+#[derive(Clone, Debug, Default, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct GarminFetchResult {
+    pub paths: Vec<String>,
+    pub failed: Vec<ImportIssue>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct BullsNoteStatusDto {
+    pub enabled: bool,
+    pub vault_path: String,
+    pub folder_name: String,
+    pub last_success: Option<String>,
+    pub last_error: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
