@@ -17,9 +17,9 @@ use crate::{ImportIssue, ImportReport, Library, Result, ServiceError};
 /// 경로 화면용 최대 점 수 (설계 §6.7).
 const ROUTE_MAX_POINTS: usize = 1500;
 /// 사진만 따로 가져올 때 기존 운동을 찾는 범위.
-const NEAR_HOURS: i64 = 36;
+pub(crate) const NEAR_HOURS: i64 = 36;
 
-fn file_name(p: &Path) -> String {
+pub(crate) fn file_name(p: &Path) -> String {
     p.file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default()
@@ -31,19 +31,39 @@ fn has_ext(p: &Path, ext: &str) -> bool {
         .is_some_and(|e| e.eq_ignore_ascii_case(ext))
 }
 
-/// 폴더는 그 안 파일(하위 폴더 제외)로 펼치고, FIT과 사진만 남긴다.
-fn expand(paths: &[std::path::PathBuf]) -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
+/// 폴더 안을 하위 3단계까지 찾는다 (이름이 `.`으로 시작하는 폴더는 건너뜀).
+const MAX_DEPTH: usize = 3;
+
+fn walk(dir: &Path, depth: usize, out: &mut Vec<std::path::PathBuf>) {
+    let Ok(rd) = std::fs::read_dir(dir) else {
+        return;
+    };
+    let mut entries: Vec<_> = rd.filter_map(|e| e.ok().map(|e| e.path())).collect();
+    entries.sort();
+    for p in entries {
+        if p.is_file() {
+            out.push(p);
+        } else if p.is_dir() && depth < MAX_DEPTH {
+            let hidden = p
+                .file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with('.'));
+            if !hidden {
+                walk(&p, depth + 1, out);
+            }
+        }
+    }
+}
+
+/// 폴더는 그 안 파일로 펼치고, FIT과 사진만 남긴다. `recursive`면 하위 폴더도(게시물 작성), 아니면 그 폴더만(예전 가져오기).
+pub(crate) fn expand(
+    paths: &[std::path::PathBuf],
+    recursive: bool,
+) -> (Vec<std::path::PathBuf>, Vec<std::path::PathBuf>) {
     let mut files = Vec::new();
     for p in paths {
         if p.is_dir() {
-            if let Ok(rd) = std::fs::read_dir(p) {
-                let mut v: Vec<_> = rd
-                    .filter_map(|e| e.ok().map(|e| e.path()))
-                    .filter(|p| p.is_file())
-                    .collect();
-                v.sort();
-                files.extend(v);
-            }
+            walk(p, if recursive { 0 } else { MAX_DEPTH }, &mut files);
         } else {
             files.push(p.clone());
         }
@@ -71,14 +91,14 @@ pub(crate) fn day_dir(d: NaiveDate) -> String {
     format!("files/{}", d.format("%Y%m%d"))
 }
 
-fn local_offset_at(t: DateTime<Utc>) -> i32 {
+pub(crate) fn local_offset_at(t: DateTime<Utc>) -> i32 {
     Local
         .offset_from_utc_datetime(&t.naive_utc())
         .fix()
         .local_minus_utc()
 }
 
-fn local_date(t: DateTime<Utc>, offset_s: i32) -> NaiveDate {
+pub(crate) fn local_date(t: DateTime<Utc>, offset_s: i32) -> NaiveDate {
     (t + workout_core::chrono::Duration::seconds(offset_s as i64)).date_naive()
 }
 
@@ -87,7 +107,7 @@ type Cache = HashMap<String, Activity>;
 
 impl Library {
     pub fn import_paths(&mut self, paths: &[std::path::PathBuf]) -> Result<ImportReport> {
-        let (fits, photos) = expand(paths);
+        let (fits, photos) = expand(paths, false);
         let mut report = ImportReport::default();
         self.import_files(&fits, &photos, None, &mut report)?;
         Ok(report)
@@ -100,7 +120,7 @@ impl Library {
         date: NaiveDate,
         paths: &[std::path::PathBuf],
     ) -> Result<ImportReport> {
-        let (fits, photos) = expand(paths);
+        let (fits, photos) = expand(paths, false);
         let mut report = ImportReport::default();
         let mut keep_fits = Vec::new();
         let mut offset = None;

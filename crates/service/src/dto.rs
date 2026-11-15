@@ -312,3 +312,61 @@ pub struct GoogleClientDto {
     pub client_id: String,
     pub has_secret: bool,
 }
+
+/// 게시물 작성 미리보기에서 한 운동에 붙을 사진.
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PlannedPhoto {
+    /// 올린 원본 경로.
+    pub path: String,
+    pub file_name: String,
+    /// 촬영 지점 (시간으로 맞춘 경우만).
+    pub km_mark: Option<f64>,
+}
+
+/// 새로 만들 운동(= 새 게시물).
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PlannedActivity {
+    /// FIT 원본 경로.
+    pub source: String,
+    pub activity_id: String,
+    /// YYYY-MM-DD.
+    pub date: String,
+    pub title: String,
+    pub sport: SportKind,
+    pub km: f64,
+    pub photos: Vec<PlannedPhoto>,
+    /// 보관함에 있던 안 붙은 사진 중 이 운동에 붙을 수.
+    pub library_photos: u32,
+}
+
+/// 보관함에 이미 있는 운동 (FIT를 다시 올렸거나 사진을 보탬).
+#[derive(Clone, Debug, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ExistingTarget {
+    pub activity_id: String,
+    pub date: String,
+    pub title: String,
+    pub sport: SportKind,
+    pub km: f64,
+    pub uploaded_fit: bool,
+    pub photos: Vec<PlannedPhoto>,
+    /// 글이 고쳐졌거나 게시돼 글은 바뀌지 않음.
+    pub post_locked: bool,
+}
+
+/// 저장 전 미리보기.
+#[derive(Clone, Debug, Default, Serialize, Deserialize, TS, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct UploadPlan {
+    pub new_activities: Vec<PlannedActivity>,
+    pub existing: Vec<ExistingTarget>,
+    pub excluded: Vec<ImportIssue>,
+    /// 이미 보관된 사진 파일 이름.
+    pub duplicates: Vec<String>,
+}

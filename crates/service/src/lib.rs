@@ -8,6 +8,7 @@ mod files;
 mod import;
 mod posts;
 pub mod secrets;
+mod upload;
 mod views;
 
 pub use dto::*;
