@@ -4,4 +4,4 @@ export type SettingsDto = {
 /**
  * 카드 경로선에서 출발·도착 500m를 가린다.
  */
-cardRouteTrim: boolean, };
+cardRouteTrim: boolean, garminConnected: boolean, garminAutoCheck: boolean, };

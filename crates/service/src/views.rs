@@ -1,5 +1,6 @@
 //! 대시보드와 운동 상세 조회.
 use workout_card::card_data;
+use workout_core::chrono::{Datelike, Local};
 use workout_core::format::{activity_title, hms, pace_per_km, speed_kmh};
 use workout_core::model::{Sample, Sport};
 use workout_core::splits::km_splits;
@@ -186,6 +187,8 @@ impl Library {
         self.store
             .set_setting(GOAL_RUNNING_KEY, valid(running_km).as_deref())?;
         self.store.set_setting(OLD_GOAL_KEY, None)?;
+        let now = Local::now();
+        self.maybe_sync_bullsnote_month(now.year(), now.month());
         Ok(())
     }
 

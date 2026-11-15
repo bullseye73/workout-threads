@@ -12,6 +12,9 @@ pub const GEMINI_KEY: &str = "gemini_api_key";
 pub const GOOGLE_REFRESH: &str = "google_refresh_token";
 /// "토큰|만료 unix초" 형식.
 pub const GOOGLE_ACCESS: &str = "google_access_token";
+pub const GARMIN_KEY: &str = "garmin_personal_api_key";
+/// "토큰|만료 unix초" 형식.
+pub const GARMIN_ACCESS: &str = "garmin_access_token";
 
 pub trait SecretStore: Send + Sync {
     fn get(&self, name: &str) -> Option<String>;

@@ -6726,6 +6726,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "workout-garmin"
+version = "0.1.0"
+dependencies = [
+ "flate2",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "workout-core",
+ "workout-enrich",
+]
+
+[[package]]
 name = "workout-gdrive"
 version = "0.1.0"
 dependencies = [
@@ -6763,6 +6775,7 @@ dependencies = [
  "workout-card",
  "workout-core",
  "workout-enrich",
+ "workout-garmin",
  "workout-gdrive",
  "workout-post",
  "workout-store",

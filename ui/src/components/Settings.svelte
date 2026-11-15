@@ -6,6 +6,7 @@
   import { api } from '$lib/api'
   import { backupStatusText } from '$lib/backup'
   import type { BackupStatusDto } from '$lib/bindings/BackupStatusDto'
+  import type { BullsNoteStatusDto } from '$lib/bindings/BullsNoteStatusDto'
   import type { RefineStatusDto } from '$lib/bindings/RefineStatusDto'
   import { ask } from '$lib/confirm.svelte'
   let { onClose }: { onClose: () => void } = $props()
@@ -14,6 +15,16 @@
   let keyInput = $state('')
   const KEY_HINT: Record<string, string> = { gemini: 'AIza…', claude: 'sk-ant-…' }
   let trim = $state(false)
+  let garminConnected = $state(false)
+  let garminAutoCheck = $state(false)
+  let garminKeyInput = $state('')
+  let garminStatus = $state('')
+  let garminBusy = $state(false)
+  let bullsnote = $state<BullsNoteStatusDto | null>(null)
+  let bnVault = $state('')
+  let bnFolder = $state('02_Areas')
+  let bnEnabled = $state(false)
+  let bnBusy = $state(false)
   let message = $state('')
   let error = $state('')
   let clientId = $state('')
@@ -24,7 +35,17 @@
 
   $effect(() => {
     loadRefine()
-    api.settings().then(s => (trim = s.cardRouteTrim)).catch(e => (error = String(e)))
+    api.settings().then(s => {
+      trim = s.cardRouteTrim
+      garminConnected = s.garminConnected
+      garminAutoCheck = s.garminAutoCheck
+    }).catch(e => (error = String(e)))
+    api.bullsnoteStatus().then(b => {
+      bullsnote = b
+      bnEnabled = b.enabled
+      bnVault = b.vaultPath
+      bnFolder = b.folderName
+    }).catch(() => undefined)
     api.googleClient().then(c => { clientId = c?.clientId ?? ''; hasSecret = !!c?.hasSecret }).catch(() => undefined)
     api.backupStatus().then(s => (backup = s)).catch(() => undefined)
   })
@@ -77,6 +98,61 @@
   async function saveTrim() {
     try { await api.setCardRouteTrim(trim); message = trim ? '새 카드부터 출발·도착 부근을 가려요' : '카드에 경로 전체를 그려요' } catch (e) { error = String(e) }
   }
+  async function saveGarminKey() {
+    if (!garminKeyInput.trim()) return
+    garminBusy = true; error = ''; message = ''
+    try {
+      await api.setGarminKey(garminKeyInput.trim())
+      garminConnected = true
+      garminKeyInput = ''
+      garminStatus = ''
+      message = 'Garmin 개인 API 키를 저장했어요'
+    } catch (e) { error = String(e) } finally { garminBusy = false }
+  }
+  async function disconnectGarmin() {
+    garminBusy = true; error = ''; message = ''
+    try {
+      await api.setGarminKey(null)
+      garminConnected = false
+      garminStatus = ''
+      message = 'Garmin 연결을 끊었어요'
+    } catch (e) { error = String(e) } finally { garminBusy = false }
+  }
+  async function testGarmin() {
+    garminBusy = true; error = ''; message = ''; garminStatus = '연결 확인 중…'
+    try {
+      const count = await api.testGarmin()
+      garminStatus = `연결됐어요 · 최근 7일 활동 ${count}개`
+    } catch (e) { garminStatus = ''; error = String(e) } finally { garminBusy = false }
+  }
+  async function saveGarminAutoCheck() {
+    try {
+      await api.setGarminAutoCheck(garminAutoCheck)
+      message = garminAutoCheck ? '새 Garmin 활동을 자동으로 확인해요' : 'Garmin 자동 확인을 껐어요'
+    } catch (e) { error = String(e) }
+  }
+  async function saveBullsnote() {
+    bnBusy = true; error = ''
+    try {
+      bullsnote = await api.setBullsnoteSettings(bnEnabled, bnVault.trim() || null, bnFolder.trim() || null)
+      message = bnEnabled ? 'BullsNote 목표 기록을 켰어요' : 'BullsNote 목표 기록을 껐어요'
+    } catch (e) { error = String(e) } finally { bnBusy = false }
+  }
+  async function pickBnVault() {
+    const picked = await api.pickDirectory()
+    if (picked) { bnVault = picked; await saveBullsnote() }
+  }
+  async function syncBnNow() {
+    bnBusy = true; error = ''; message = ''
+    const now = new Date()
+    try {
+      bullsnote = await api.syncBullsnoteNow(now.getFullYear(), now.getMonth() + 1)
+      message = 'BullsNote에 이번 달 목표를 반영했어요'
+    } catch (e) {
+      error = String(e)
+      bullsnote = await api.bullsnoteStatus().catch(() => bullsnote)
+    } finally { bnBusy = false }
+  }
 </script>
 
 <Dialog.Root open onOpenChange={o => { if (!o) onClose() }}>
@@ -118,6 +194,49 @@
       출발·도착 500m를 카드에서 가리기
     </label>
     <p class="muted">집 근처에서 출발했다면 켜 두세요. 이미 만든 카드는 게시 준비 화면의 '카드 다시 만들기'로 바꿀 수 있어요.</p>
+  </section>
+
+  <section>
+    <h3>Garmin 연결</h3>
+    <p class="muted">Garmin Connect 계정 설정에서 발급한 Personal API 키를 넣으면 활동을 바로 가져올 수 있어요. 키는 이 컴퓨터의 키 보관함에만 저장돼요.</p>
+    <div class="row">
+      <input type="password" placeholder={garminConnected ? '저장된 키 있음' : 'Personal API 키'} bind:value={garminKeyInput} aria-label="Garmin Personal API 키" autocomplete="off" />
+      <Button size="sm" onclick={saveGarminKey} disabled={garminBusy || !garminKeyInput.trim()}>저장</Button>
+      {#if garminConnected}
+        <Button size="sm" variant="outline" onclick={testGarmin} disabled={garminBusy}>연결 확인</Button>
+        <Button size="sm" variant="outline" onclick={disconnectGarmin} disabled={garminBusy}>연결 끊기</Button>
+      {/if}
+    </div>
+    {#if garminStatus}<p class="status">{garminStatus}</p>{/if}
+    <label class="check">
+      <input type="checkbox" bind:checked={garminAutoCheck} onchange={saveGarminAutoCheck} />
+      Garmin 새 활동 자동 확인
+    </label>
+  </section>
+
+  <section>
+    <h3>BullsNote 목표 기록</h3>
+    <label class="check">
+      <input type="checkbox" bind:checked={bnEnabled} onchange={saveBullsnote} disabled={bnBusy} />
+      BullsNote에 목표 기록
+    </label>
+    <div class="row">
+      <label class="field" style="flex:1">볼트 경로
+        <input bind:value={bnVault} onchange={saveBullsnote} placeholder="~/Documents/BullsNote" />
+      </label>
+      <Button size="sm" variant="outline" onclick={pickBnVault} disabled={bnBusy}>폴더 고르기</Button>
+    </div>
+    <div class="row">
+      <label class="field" style="flex:1">폴더 이름
+        <input bind:value={bnFolder} onchange={saveBullsnote} placeholder="02_Areas" />
+      </label>
+      <Button size="sm" variant="outline" onclick={syncBnNow} disabled={bnBusy}>지금 반영</Button>
+    </div>
+    {#if bullsnote?.lastError}
+      <p class="status bad">오류: {bullsnote.lastError}</p>
+    {:else if bullsnote?.lastSuccess}
+      <p class="status">마지막 반영: {new Date(bullsnote.lastSuccess).toLocaleString('ko-KR')}</p>
+    {/if}
   </section>
 
   <section>
