@@ -16,7 +16,7 @@
 
   let { year, month, view, backup, unmatched, onShift, onSaveGoal, onImport, onUnmatched, onSettings }: {
     year: number; month: number; view: MonthView | null; backup: BackupStatusDto | null; unmatched: number
-    onShift: (delta: number) => void; onSaveGoal: (cyclingKm: number | null, runningKm: number | null) => void
+    onShift: (delta: number) => void; onSaveGoal: (cyclingKm: number | null, runningKm: number | null) => Promise<void> | void
     onImport: (kind: 'files' | 'folder') => void; onUnmatched: () => void; onSettings: () => void
   } = $props()
 
@@ -29,16 +29,28 @@
   let goalOpen = $state(false)
   let rideInput = $state<number | string | null>(null)
   let runInput = $state<number | string | null>(null)
+  let goalError = $state('')
+  let savingGoal = $state(false)
 
   function openGoal() {
     rideInput = view?.goalCyclingKm ?? null
     runInput = view?.goalRunningKm ?? null
+    goalError = ''
     goalOpen = true
   }
-  function saveGoal(e: SubmitEvent) {
+  /** 저장이 끝나야 창을 닫는다. 실패하면 이유를 보여 주고 창을 그대로 둔다. */
+  async function saveGoal(e: SubmitEvent) {
     e.preventDefault()
-    onSaveGoal(parseGoal(rideInput), parseGoal(runInput))
-    goalOpen = false
+    savingGoal = true
+    goalError = ''
+    try {
+      await onSaveGoal(parseGoal(rideInput), parseGoal(runInput))
+      goalOpen = false
+    } catch (err) {
+      goalError = `목표를 저장하지 못했어요: ${err}`
+    } finally {
+      savingGoal = false
+    }
   }
 </script>
 
@@ -114,7 +126,8 @@
       <Input id="goal-ride" type="number" min="0" step="10" placeholder="없음" bind:value={rideInput} />
       <Label for="goal-run">러닝 목표 (km)</Label>
       <Input id="goal-run" type="number" min="0" step="5" placeholder="없음" bind:value={runInput} />
-      <Dialog.Footer><Button type="submit">목표 저장</Button></Dialog.Footer>
+      {#if goalError}<p class="m-0 text-sm text-destructive" role="alert">{goalError}</p>{/if}
+      <Dialog.Footer><Button type="submit" disabled={savingGoal}>목표 저장</Button></Dialog.Footer>
     </form>
   </Dialog.Content>
 </Dialog.Root>

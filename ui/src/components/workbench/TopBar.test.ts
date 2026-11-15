@@ -32,3 +32,23 @@ describe('TopBar goals', () => {
     expect(t).toContain('러닝 8.1km')
   })
 })
+
+describe('TopBar goal dialog', () => {
+  it('shows why saving failed and keeps the dialog open', async () => {
+    const app = mount(TopBar, { target: document.body, props: {
+      year: 2026, month: 11, view: view(300, null), backup: null, unmatched: 0,
+      onShift: () => {}, onSaveGoal: async () => { throw 'Command set_goals not found' },
+      onImport: () => {}, onUnmatched: () => {}, onSettings: () => {} } })
+    flushSync()
+    ;([...document.querySelectorAll('header button')].find(b => b.getAttribute('title')?.startsWith('목표 바꾸기')) as HTMLButtonElement).click()
+    flushSync()
+    const form = document.querySelector('form') as HTMLFormElement
+    form.requestSubmit()
+    await new Promise(r => setTimeout(r, 0))
+    flushSync()
+    expect(document.body.textContent).toContain('목표를 저장하지 못했어요')
+    expect(document.body.textContent).toContain('Command set_goals not found')
+    expect(document.querySelector('form')).not.toBeNull()
+    unmount(app)
+  })
+})

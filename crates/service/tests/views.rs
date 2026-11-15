@@ -136,3 +136,22 @@ fn month_view_items_carry_list_fields() {
     assert_eq!(no_photo.card_count, 0);
     assert!(no_photo.cover_card.is_none());
 }
+
+#[test]
+fn goals_carry_over_to_other_months_until_changed() {
+    let (_t, mut lib) = temp_library();
+    lib.set_goals(Some(300.0), Some(50.0)).unwrap();
+    for (y, m) in [(2026, 11), (2026, 12), (2027, 1)] {
+        let v = lib.month_view(y, m).unwrap();
+        assert_eq!(
+            (v.goal_cycling_km, v.goal_running_km),
+            (Some(300.0), Some(50.0)),
+            "{y}-{m}"
+        );
+    }
+    lib.set_goals(Some(400.0), Some(50.0)).unwrap();
+    assert_eq!(
+        lib.month_view(2027, 2).unwrap().goal_cycling_km,
+        Some(400.0)
+    );
+}
