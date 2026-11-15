@@ -216,3 +216,38 @@ fn refreshes_expired_token_with_api_key() {
             .starts_with("garmin-access-token-123|")
     );
 }
+
+#[test]
+fn exchanges_plain_text_jwt_token_and_handles_empty_activity_body() {
+    let http = Arc::new(MockHttp::new(vec![
+        HttpResponse {
+            status: 200,
+            body: b"eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjMifQ.sig\n".to_vec(),
+        },
+        HttpResponse {
+            status: 200,
+            body: Vec::new(),
+        },
+    ]));
+
+    let cache = Arc::new(Mutex::new(None::<String>));
+    let cache_r = cache.clone();
+    let cache_w = cache.clone();
+    let tokens = Arc::new(KeyTokenProvider::new(
+        Arc::new(|| Some("my-personal-key".to_string())),
+        Arc::new(move || cache_r.lock().unwrap().clone()),
+        Arc::new(move |v| *cache_w.lock().unwrap() = v),
+    ));
+
+    let client = GarminClient::new(http.clone(), tokens);
+    let from = NaiveDate::from_ymd_opt(2026, 11, 10).unwrap();
+    let to = NaiveDate::from_ymd_opt(2026, 11, 15).unwrap();
+    let list = client.list_activities(from, to).unwrap();
+    assert!(list.is_empty());
+
+    let calls = http.calls();
+    assert!(calls[1].headers.contains(&(
+        "Authorization".into(),
+        "Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxMjMifQ.sig".into()
+    )));
+}

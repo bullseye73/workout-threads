@@ -31,7 +31,7 @@
      POST https://personal.connectapi.garmin.com/personalapitoken-service/personal-api/personal-api-key/token
      Authorization: ApiKey <personal-api-key>
      ```
-   - **응답(JSON)**: `access_token`(문자열), `expires_in`(초 단위 유효 시간) 포함.
+   - **응답**: 순수 텍스트(`plain text`)로 **JWT 액세스 토큰 문자열**을 직접 반환한다(JSON 객체가 아님).
    - **데이터 요청 헤더**: `Authorization: Bearer <access_token>`
 3. **만료 및 갱신**:
    - 액세스 토큰 유효 기간은 **24시간**(또는 개인 API 키 만료 시각 중 더 이른 시점)이다.

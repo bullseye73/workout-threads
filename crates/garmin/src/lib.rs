@@ -97,12 +97,24 @@ impl KeyTokenProvider {
             timeout: TimeoutClass::Lookup,
         };
         let resp = send_checked(http, req)?;
-        let parsed: TokenResponse =
-            serde_json::from_slice(&resp.body).map_err(|e| GarminError::Parse(e.to_string()))?;
-        let ttl = parsed.expires_in.unwrap_or(86_400);
+        let raw = std::str::from_utf8(&resp.body)
+            .map_err(|e| GarminError::Parse(e.to_string()))?
+            .trim();
+        if raw.is_empty() {
+            return Err(GarminError::Parse("빈 토큰 응답을 받았어요".into()));
+        }
+        let (access_token, ttl) = if raw.starts_with('{') {
+            let parsed: TokenResponse =
+                serde_json::from_str(raw).map_err(|e| GarminError::Parse(e.to_string()))?;
+            (parsed.access_token, parsed.expires_in.unwrap_or(86_400))
+        } else {
+            // Garmin Personal API는 JSON이 아닌 순수 JWT 문자열(plain text)을 돌려준다.
+            let tok = raw.trim_matches('"').to_string();
+            (tok, 86_400)
+        };
         let exp = Self::now_secs().saturating_add(ttl);
-        (self.write_cache)(Some(format!("{}|{exp}", parsed.access_token)));
-        Ok(parsed.access_token)
+        (self.write_cache)(Some(format!("{access_token}|{exp}")));
+        Ok(access_token)
     }
 }
 
@@ -170,6 +182,9 @@ impl GarminClient {
                 to.format("%Y-%m-%d")
             );
             let resp = self.get_authed(&q, TimeoutClass::Lookup)?;
+            if resp.body.iter().all(|b| b.is_ascii_whitespace()) {
+                break;
+            }
             let page: Vec<RawActivity> = serde_json::from_slice(&resp.body)
                 .map_err(|e| GarminError::Parse(e.to_string()))?;
             let count = page.len();
@@ -196,8 +211,11 @@ impl GarminClient {
         let d = date.format("%Y-%m-%d");
         let path = format!("/usersummary-service/v2/dailysummaries?startDate={d}&endDate={d}");
         let resp = self.get_authed(&path, TimeoutClass::Lookup)?;
-        let rows: Vec<RawDailySummary> =
-            serde_json::from_slice(&resp.body).map_err(|e| GarminError::Parse(e.to_string()))?;
+        let rows: Vec<RawDailySummary> = if resp.body.iter().all(|b| b.is_ascii_whitespace()) {
+            Vec::new()
+        } else {
+            serde_json::from_slice(&resp.body).map_err(|e| GarminError::Parse(e.to_string()))?
+        };
         Ok(match rows.into_iter().next() {
             Some(r) => DailyWellness {
                 date,
