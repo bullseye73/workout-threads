@@ -20,11 +20,12 @@
     onImport: (kind: 'files' | 'folder') => void; onUnmatched: () => void; onSettings: () => void
   } = $props()
 
-  // 목표를 정한 종목만 막대로 보여 준다.
-  const goals = $derived(view ? [
+  // 종목마다: 목표가 있으면 막대, 없으면 거리만. 색만으로 구분하지 않게 종목 이름을 함께 쓴다.
+  const sports = $derived(view ? [
     { key: 'ride', label: '라이딩', done: view.cycling.km, goal: view.goalCyclingKm, bar: 'bg-ride' },
     { key: 'run', label: '러닝', done: view.running.km, goal: view.goalRunningKm, bar: 'bg-run' },
-  ].flatMap(g => { const p = sportGoal(g.done, g.goal, year, month, new Date()); return p ? [{ ...g, goal: g.goal!, p }] : [] }) : [])
+  ].map(g => ({ ...g, p: sportGoal(g.done, g.goal, year, month, new Date()) })) : [])
+  const anyGoal = $derived(sports.some(g => g.p))
   let goalOpen = $state(false)
   let rideInput = $state<number | string | null>(null)
   let runInput = $state<number | string | null>(null)
@@ -52,20 +53,27 @@
     <div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 max-md:order-3 max-md:basis-full">
       <button class="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md px-1 py-0.5 text-left hover:bg-muted" onclick={openGoal}
         title="목표 바꾸기. 세로선은 오늘까지 채워야 할 거리예요">
-        {#each goals as g (g.key)}
-          <span class="flex items-center gap-2">
-            <b class="text-base whitespace-nowrap tracking-tight">{km(g.done)}<small class="ml-0.5 text-xs font-semibold text-muted-foreground">/ {g.goal}km</small></b>
-            <span class="relative flex h-1.5 w-28 overflow-hidden rounded-full bg-sunken max-sm:w-20" role="img"
-              aria-label="{g.label} 목표 {g.goal}km 중 {Math.round(g.p.ratio * 100)}%">
-              <i class="block {g.bar}" style:width="{g.p.ratio * 100}%"></i>
-              <i class="absolute inset-y-0 w-0.5 bg-foreground" style:left="{g.p.paceRatio * 100}%"></i>
+        {#if anyGoal}
+          {#each sports as g (g.key)}
+            <span class="flex items-center gap-2">
+              <span class="flex items-center gap-1 text-xs text-muted-foreground"><i class="inline-block size-2 rounded-[2px] {g.bar}"></i>{g.label}</span>
+              {#if g.p}
+                <b class="text-base whitespace-nowrap tracking-tight">{km(g.done)}<small class="ml-0.5 text-xs font-semibold text-muted-foreground">/ {g.goal}km</small></b>
+                <span class="relative flex h-1.5 w-28 overflow-hidden rounded-full bg-sunken max-sm:w-20" role="img"
+                  aria-label="{g.label} 목표 {g.goal}km 중 {Math.round(g.p.ratio * 100)}%">
+                  <i class="block {g.bar}" style:width="{g.p.ratio * 100}%"></i>
+                  <i class="absolute inset-y-0 w-0.5 bg-foreground" style:left="{g.p.paceRatio * 100}%"></i>
+                </span>
+                {#if g.p.perDayKm !== null}<span class="text-xs text-muted-foreground max-sm:hidden">하루 {km(g.p.perDayKm)}km면 목표</span>{/if}
+              {:else}
+                <b class="text-base whitespace-nowrap tracking-tight">{km(g.done)}<small class="ml-0.5 text-xs font-semibold text-muted-foreground">km</small></b>
+              {/if}
             </span>
-            {#if g.p.perDayKm !== null}<span class="text-xs text-muted-foreground max-sm:hidden">하루 {km(g.p.perDayKm)}km</span>{/if}
-          </span>
+          {/each}
         {:else}
           <b class="text-xl whitespace-nowrap tracking-tight">{km(view.totalKm)}<small class="ml-0.5 text-xs font-semibold text-muted-foreground">km</small></b>
           <span class="text-xs text-muted-foreground">목표 정하기</span>
-        {/each}
+        {/if}
       </button>
       <div class="flex gap-3.5 text-xs text-muted-foreground max-lg:hidden">
         <span><i class="mr-1 inline-block size-2 rounded-[2px] bg-ride"></i>라이딩 <b class="text-[13px] text-foreground">{view.cycling.count}회 {km(view.cycling.km)}km</b></span>
