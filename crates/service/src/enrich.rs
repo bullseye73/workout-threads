@@ -451,13 +451,17 @@ impl Library {
         })
     }
 
-    /// 이 운동의 카드를 지금 설정으로 다시 그린다. 다시 그린 장수를 돌려준다.
+    /// 이 운동의 대표 카드를 지금 설정으로 다시 그린다. 다시 그린 장수를 돌려준다.
     pub fn regenerate_cards(&mut self, id: &str) -> Result<u32> {
         let activity = self.load_activity(id)?;
         let mut report = ImportReport::default();
-        for photo in self.store.photos_for(id)? {
+        for (idx, photo) in self.store.photos_for(id)?.into_iter().enumerate() {
             if photo.card_path.is_some() {
-                self.make_card(&activity, &photo.path, &mut report);
+                if idx == 0 {
+                    self.make_card(&activity, &photo.path, &mut report);
+                } else {
+                    self.make_optimized_photo(&photo.path, &mut report);
+                }
             }
         }
         if let Some(issue) = report.failed.first() {

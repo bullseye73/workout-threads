@@ -6,7 +6,7 @@ mod upload;
 
 pub use data::{CardData, card_data, card_data_with};
 pub use render::{render_card, render_card_to_file};
-pub use upload::photo_for_upload;
+pub use upload::{photo_for_upload, photo_for_upload_to_file};
 
 #[derive(thiserror::Error, Debug)]
 pub enum CardError {

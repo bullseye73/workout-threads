@@ -1,7 +1,7 @@
 //! FIT·사진 가져오기. 원본은 라이브러리로 복사하고 원래 폴더에는 쓰지 않는다.
 use std::collections::{BTreeSet, HashMap};
 use std::path::Path;
-use workout_card::{card_data_with, render_card_to_file};
+use workout_card::{card_data_with, photo_for_upload_to_file, render_card_to_file};
 use workout_core::chrono::{DateTime, Local, NaiveDate, Offset, TimeZone, Utc};
 use workout_core::fit::parse_fit;
 use workout_core::matching::{assign_photo_with_fallback, match_photo};
@@ -16,6 +16,8 @@ use crate::{ImportIssue, ImportReport, Library, Result, ServiceError};
 
 /// 경로 화면용 최대 점 수 (설계 §6.7).
 const ROUTE_MAX_POINTS: usize = 1500;
+/// 대표 사진 외 나머지 사진의 최대 긴 변 크기 (px).
+pub(crate) const OPTIMIZED_MAX_SIDE: u32 = 2160;
 /// 사진만 따로 가져올 때 기존 운동을 찾는 범위.
 pub(crate) const NEAR_HOURS: i64 = 36;
 
@@ -273,7 +275,11 @@ impl Library {
         if let Some((a, m)) = &matched {
             row.activity_id = Some(a.header.id.clone());
             row.km_mark = Some(m.km_mark);
-            row.card_path = self.make_card(a, &rel, report);
+            row.card_path = if self.activity_has_card(&a.header.id)? {
+                self.make_optimized_photo(&rel, report)
+            } else {
+                self.make_card(a, &rel, report)
+            };
             touched.insert(a.header.id.clone());
         }
         row.id = self.store.insert_photo(&row)?;
@@ -345,7 +351,11 @@ impl Library {
             )?;
         }
         let mut issues = ImportReport::default();
-        let card = self.make_card(a, &new_rel, &mut issues);
+        let card = if self.activity_has_card(&a.header.id)? {
+            self.make_optimized_photo(&new_rel, &mut issues)
+        } else {
+            self.make_card(a, &new_rel, &mut issues)
+        };
         let cleanup = |lib: &Library| {
             if moving {
                 let _ = std::fs::remove_file(join_rel(&lib.root, &new_rel));
@@ -370,6 +380,15 @@ impl Library {
         Ok(photo)
     }
 
+    /// 운동에 이미 생성된 카드(또는 최적화 이미지)가 있는지 확인한다.
+    pub(crate) fn activity_has_card(&self, activity_id: &str) -> Result<bool> {
+        Ok(self
+            .store
+            .photos_for(activity_id)?
+            .iter()
+            .any(|p| p.card_path.is_some()))
+    }
+
     /// 사진 옆에 `<stem>_card.jpg`를 만든다. 실패는 보고서에 남기고 None.
     pub(crate) fn make_card(
         &self,
@@ -383,6 +402,34 @@ impl Library {
         match render_card_to_file(
             &join_rel(&self.root, photo_rel),
             &card_data_with(a, self.card_trim_m()),
+            &join_rel(&self.root, &card_rel),
+        ) {
+            Ok(()) => {
+                report.cards_created += 1;
+                Some(card_rel)
+            }
+            Err(e) => {
+                report.failed.push(ImportIssue {
+                    file: name.to_string(),
+                    reason: e.to_string(),
+                });
+                None
+            }
+        }
+    }
+
+    /// 사진 옆에 사이즈 최적화(메타데이터 제거)된 `<stem>_card.jpg`를 만든다. 실패는 보고서에 남기고 None.
+    pub(crate) fn make_optimized_photo(
+        &self,
+        photo_rel: &str,
+        report: &mut ImportReport,
+    ) -> Option<String> {
+        let (parent, name) = photo_rel.rsplit_once('/')?;
+        let stem = Path::new(name).file_stem()?.to_string_lossy().into_owned();
+        let card_rel = format!("{parent}/{stem}_card.jpg");
+        match photo_for_upload_to_file(
+            &join_rel(&self.root, photo_rel),
+            OPTIMIZED_MAX_SIDE,
             &join_rel(&self.root, &card_rel),
         ) {
             Ok(()) => {

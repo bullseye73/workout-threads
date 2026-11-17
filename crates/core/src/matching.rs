@@ -41,12 +41,32 @@ pub fn match_photo(activities: &[Activity], taken_at: DateTime<Utc>) -> Option<P
             .find_map(|s| s.distance_m)
             .unwrap_or(a.header.summary.distance_m)
     } else {
-        a.samples
-            .iter()
-            .filter(|s| s.distance_m.is_some())
-            .min_by_key(|s| (s.time - taken_at).num_milliseconds().abs())
-            .and_then(|s| s.distance_m)
-            .unwrap_or(0.0)
+        match a.samples.binary_search_by_key(&taken_at, |s| s.time) {
+            Ok(i) => a.samples[i].distance_m.unwrap_or(0.0),
+            Err(i) => {
+                let prev = if i > 0 {
+                    (0..i)
+                        .rev()
+                        .find_map(|idx| a.samples[idx].distance_m.map(|d| (a.samples[idx].time, d)))
+                } else {
+                    None
+                };
+                let next = (i..a.samples.len())
+                    .find_map(|idx| a.samples[idx].distance_m.map(|d| (a.samples[idx].time, d)));
+                match (prev, next) {
+                    (Some((t1, d1)), Some((t2, d2))) => {
+                        if (taken_at - t1).abs() <= (t2 - taken_at).abs() {
+                            d1
+                        } else {
+                            d2
+                        }
+                    }
+                    (Some((_, d1)), None) => d1,
+                    (None, Some((_, d2))) => d2,
+                    (None, None) => 0.0,
+                }
+            }
+        }
     };
     Some(PhotoMatch {
         activity_id: a.header.id.clone(),

@@ -19,3 +19,9 @@ pub fn photo_for_upload(path: &Path, max_side: u32) -> Result<Vec<u8>, CardError
         .encode_image(&img.to_rgb8())?;
     Ok(out)
 }
+
+/// EXIF 회전 반영, 긴 변이 max_side보다 크면 줄인 JPEG를 파일로 저장한다.
+pub fn photo_for_upload_to_file(path: &Path, max_side: u32, out: &Path) -> Result<(), CardError> {
+    std::fs::write(out, photo_for_upload(path, max_side)?)?;
+    Ok(())
+}

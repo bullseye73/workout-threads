@@ -174,7 +174,11 @@ impl Library {
         );
         copy_new(&bytes, &join_rel(&self.root, &rel))?;
         let mut issues = ImportReport::default();
-        let card = self.make_card(a, &rel, &mut issues);
+        let card = if self.activity_has_card(&a.header.id)? {
+            self.make_optimized_photo(&rel, &mut issues)
+        } else {
+            self.make_card(a, &rel, &mut issues)
+        };
         r.failed.extend(issues.failed);
         let made = card.is_some();
         self.store.insert_photo(&PhotoRow {

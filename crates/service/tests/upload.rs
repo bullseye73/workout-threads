@@ -301,3 +301,38 @@ fn every_copy_of_a_fit_is_listed_as_its_source() {
         ]
     );
 }
+
+#[test]
+fn only_first_photo_gets_card_overlay_others_optimized() {
+    workout_testkit::require_samples!();
+    let (_t, mut lib) = temp_library();
+    let r = lib.commit_upload(&[sample_path("20261025")], &[]).unwrap();
+    let id = &r.created[0];
+    let cards = lib.post_view(id).unwrap().card_paths;
+    assert_eq!(cards.len(), 2);
+
+    let detail = lib.activity_detail(id).unwrap();
+    let activity = workout_core::fit::parse_fit(&std::fs::read(&detail.fit_file).unwrap()).unwrap();
+    let first_orig = std::path::PathBuf::from(&detail.photos[0].path);
+    let second_orig = std::path::PathBuf::from(&detail.photos[1].path);
+
+    let first_generated = std::fs::read(&cards[0]).unwrap();
+    let second_generated = std::fs::read(&cards[1]).unwrap();
+
+    let first_is_card = first_generated
+        == workout_card::render_card(&first_orig, &workout_card::card_data_with(&activity, 0.0))
+            .unwrap();
+    let second_is_opt =
+        second_generated == workout_card::photo_for_upload(&second_orig, 2160).unwrap();
+
+    let first_is_opt =
+        first_generated == workout_card::photo_for_upload(&first_orig, 2160).unwrap();
+    let second_is_card = second_generated
+        == workout_card::render_card(&second_orig, &workout_card::card_data_with(&activity, 0.0))
+            .unwrap();
+
+    assert!(
+        (first_is_card && second_is_opt) || (first_is_opt && second_is_card),
+        "정확히 1장만 카드이고 나머지 1장은 최적화 이미지여야 함"
+    );
+}
