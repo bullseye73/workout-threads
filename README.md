@@ -6,7 +6,9 @@ Garmin FIT 운동 기록과 사진을 넣으면 한 달 운동을 한눈에 보�
 
 ## 무엇을 해 주나요
 
-- **게시물 작성:** 어디에 있는 FIT 파일과 사진이든 올리면, 무엇이 만들어질지 먼저 보여 주고 앱 보관함에 저장해 **운동마다 게시물을 하나씩** 만듭니다. 사진은 운동 시간(또는 그날 하나뿐인 운동)에 맞춰 붙고 카드 이미지가 만들어집니다. 원본 파일은 그대로 두고, 같은 파일은 다시 넣지 않습니다.
+- **게시물 작성:** 어디에 있는 FIT 파일과 사진이든 올리면, 무엇이 만들어질지 먼저 보여 주고 앱 보관함에 저장해 **운동마다 게시물을 하나씩** 만듭니다. 사진은 운동 시간(또는 그날 하나뿐인 운동)에 맞춰 붙고, 대표 사진 1장이 카드 이미지로 만들어집니다. 나머지 사진은 EXIF를 지우고 최대 변 2160px 이하로 크기만 최적화합니다. 원본 파일은 그대로 두고, 같은 파일은 다시 넣지 않습니다.
+- **Garmin 연동:** 설정에서 Garmin Personal API 키를 넣으면 최근 활동을 불러와 FIT 파일을 바로 가져오고, 새 활동을 자동으로 확인할 수 있습니다.
+- **BullsNote 목표 기록:** 설정에서 BullsNote 볼트를 연결하면 월별 운동 목표와 달성 현황이 `workout-goal-YYYY-MM.md` 노트로 자동 기록·갱신됩니다.
 - **작업대 화면:** 위쪽에 이번 달 목표 막대와 종목별 합계, 그 아래 한 달 사진 띠(운동한 날은 카드 사진), 왼쪽에 주별 운동 목록, 오른쪽에 선택한 운동의 상세가 한 화면에 나옵니다.
 - **운동 상세(기록 탭):** 핵심 수치, 경로 지도(출발·도착·사진 위치), 거리 축 고도·심박·속도(러닝은 페이스) 그래프, km 구간표. 사진은 찍힌 km 지점에 꽂혀 있고, 그래프나 사진에 마우스를 올리면 지도에 그 위치가 표시됩니다.
 - **게시 준비 탭:** 장소·지나간 곳·날씨 자동 입력(직접 고칠 수 있음), 템플릿 글과 해시태그 편집, AI(Gemini 또는 Claude)로 다듬기, 피드에 올라갈 모습 미리보기, 글 복사, 게시 완료 표시.
@@ -19,7 +21,7 @@ Garmin FIT 운동 기록과 사진을 넣으면 한 달 운동을 한눈에 보�
 
 ### 1. 게시물 작성 (FIT·사진 올리기)
 
-1. 오른쪽 위 **게시물 작성**을 누르거나, FIT 파일·사진·폴더를 앱 창에 끌어다 놓습니다. 폴더는 하위 폴더 3단계까지 찾습니다.
+1. 오른쪽 위 **게시물 작성**을 누르거나, FIT 파일·사진·폴더를 앱 창에 끌어다 놓습니다. 폴더는 하위 폴더 3단계까지 찾습니다. Garmin Personal API가 연결되어 있으면 게시물 작성 창에서 최근 Garmin 활동을 골라 FIT 파일을 바로 가져올 수 있습니다.
 2. 창에 미리보기가 나옵니다: **만들 게시물**(FIT마다 하나), **이미 있는 운동**(다시 올린 FIT, 사진을 보탤 운동), **제외**(촬영 날짜가 없거나 붙일 운동이 없는 사진, 이미 있는 사진).
 3. 빼고 싶은 운동은 **빼기**, 사진은 이름을 눌러 뺍니다.
 4. **게시물 N개 만들기**를 누르면 파일이 앱 보관함에 복사되고 게시물이 만들어집니다. 하나만 만들었으면 바로 그 게시 준비 탭이 열립니다.
@@ -59,6 +61,8 @@ Garmin FIT 운동 기록과 사진을 넣으면 한 달 운동을 한눈에 보�
 
 - **화면 테마:** 시스템 / 밝게 / 어둡게.
 - **글 다듬기 AI:** Gemini(기본) 또는 Claude를 고르고 API 키와 모델을 넣습니다. 키는 이 컴퓨터의 키 보관함(macOS 키체인 등)에만 저장되고 다시 보여 주지 않습니다.
+- **Garmin Personal API:** 개인 API 키를 키 보관함에 저장하고 연결을 확인합니다. "새 활동 자동 확인"을 켜면 게시물 작성 창을 열 때 마지막 확인 이후 새 FIT을 자동으로 불러옵니다. 자세한 연동 정보는 [docs/garmin-personal-api.md](docs/garmin-personal-api.md)에 있습니다.
+- **BullsNote 월별 목표 기록:** BullsNote 볼트 경로(기본 `~/Documents/BullsNote`)와 대상 폴더(기본 `02_Areas`)를 설정하면 월별 운동 목표와 누적 현황을 `workout-goal-YYYY-MM.md`에 자동 기록합니다.
 - **카드 경로선:** 출발·도착 500m를 카드에서 가리기. 이미 만든 카드는 게시 준비 탭의 **카드 다시 만들기**로 바꿉니다.
 - **구글 드라이브 백업:** 구글 Cloud의 "데스크톱 앱" OAuth 클라이언트 ID와 secret을 넣고 로그인합니다. 만드는 방법은 [docs/setup-google-oauth.md](docs/setup-google-oauth.md)에 있습니다. 앱이 만든 파일만 드라이브의 `WorkoutApp` 폴더에 올리고, 어느 쪽 파일도 지우지 않습니다.
 
@@ -80,6 +84,7 @@ Garmin FIT 운동 기록과 사진을 넣으면 한 달 운동을 한눈에 보�
 | 날씨 | Open-Meteo | 운동 시각과 대략적인 위치 |
 | 지도 타일 | OpenStreetMap | 보고 있는 지도 영역 |
 | 글 다듬기(누를 때만) | Google Gemini 또는 Anthropic Claude | 글, 사실 정보(좌표 없음), 고르면 위치를 지운 사진 |
+| Garmin 활동/FIT(선택) | Garmin Connect Personal API | 개인 API 키로 발급한 Bearer 토큰 (활동 목록 및 FIT 다운로드) |
 | 백업(설정했을 때만) | Google Drive | 라이브러리 파일 |
 
 ## 빌드와 실행
@@ -186,9 +191,10 @@ workout-app/
 │  ├─ card      카드 이미지 렌더러 (Pretendard 글꼴 포함)
 │  ├─ post      템플릿 글과 게시 기록
 │  ├─ enrich    장소(Nominatim)·날씨(Open-Meteo), Gemini·Claude 글 다듬기
+│  ├─ garmin    Garmin Connect Personal API 클라이언트 (토큰 교환·활동·FIT 다운로드)
 │  ├─ gdrive    구글 OAuth와 드라이브 업로드
-│  ├─ store     SQLite 저장소
-│  ├─ service   앱 기능을 모은 라이브러리 (화면이 쓰는 DTO 포함)
+│  ├─ store     SQLite 저장소 (WAL 모드)
+│  ├─ service   앱 기능을 모은 라이브러리 (BullsNote 목표 기록·화면 DTO 포함)
 │  ├─ cli       workout-cli (prepare 명령)
 │  └─ testkit   테스트용 샘플 경로 도우미
 ├─ src-tauri/   데스크톱 앱 (Tauri 명령, 백업 반복 작업)
@@ -198,7 +204,7 @@ workout-app/
 │     ├─ components/detail     상세 패널(기록·게시 준비 탭)
 │     ├─ lib/                  API, 계산 함수(+테스트), 테마, 생성된 타입
 │     └─ lib/components/ui     shadcn-svelte 컴포넌트 (CLI로 추가)
-└─ docs/        설계, 구현 계획, 디자인 시안, 구글 OAuth 설정
+└─ docs/        아키텍처 구성도(design/architecture.md), 설계, 구현 계획, 디자인 시안, Garmin/Google 가이드
 ```
 
-설계와 단계별 구현 계획은 [docs/superpowers/specs](docs/superpowers/specs)와 [docs/superpowers/plans](docs/superpowers/plans)에 있습니다.
+설계와 단계별 구현 계획은 [docs/design/architecture.md](docs/design/architecture.md), [docs/superpowers/specs](docs/superpowers/specs), [docs/superpowers/plans](docs/superpowers/plans)에 있습니다.
